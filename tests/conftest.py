@@ -11,7 +11,7 @@ from remy.db.migrate import upgrade
 @pytest.fixture(
     params=["sqlite", "postgresql"] if os.environ.get("REMY_TEST_POSTGRES_URL") else ["sqlite"]
 )
-def database_url(tmp_path, request):
+def empty_database_url(tmp_path, request):
     if request.param == "postgresql":
         # The caller supplies a disposable test database. Each case owns only its new schema.
         base = make_url(os.environ["REMY_TEST_POSTGRES_URL"])
@@ -22,17 +22,20 @@ def database_url(tmp_path, request):
         url = base.update_query_dict({"options": f"-csearch_path={schema}"}).render_as_string(
             hide_password=False
         )
-        engine = create_engine(url)
         try:
-            upgrade(engine)
             yield url
         finally:
-            engine.dispose()
             with admin.begin() as connection:
                 connection.exec_driver_sql(f'DROP SCHEMA "{schema}" CASCADE')
             admin.dispose()
         return
     url = f"sqlite:///{tmp_path / 'reports.db'}"
+    yield url
+
+
+@pytest.fixture
+def database_url(empty_database_url):
+    url = empty_database_url
     engine = create_engine(url)
     upgrade(engine)
     engine.dispose()

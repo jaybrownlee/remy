@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Verified database-backed tests on a temporary native PostgreSQL 16.15 instance, including prototype adoption, tenant isolation, concurrent authentication, and audit protections. Pinned CI to the verified PostgreSQL release.
 - Added explicit Alembic migrations with a frozen baseline that preserves compatible prototype data and rejects detected schema drift. Application startup now checks schema version without creating tables or replacing triggers.
 - Added migration/adoption regression tests and PostgreSQL 16 CI coverage for database-backed tests, including an audit TRUNCATE guard. Local PostgreSQL execution remains unverified because Docker did not respond.
 

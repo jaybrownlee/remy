@@ -1,3 +1,4 @@
+from importlib import import_module
 from pathlib import Path
 from uuid import uuid4
 
@@ -23,8 +24,8 @@ from remy.db.store import Base, Store, StoredReport
 from remy.reports.compose import compose_report
 
 
-def test_empty_database_requires_explicit_migration(tmp_path):
-    url = f"sqlite:///{tmp_path / 'empty.db'}"
+def test_empty_database_requires_explicit_migration(empty_database_url):
+    url = empty_database_url
     with pytest.raises(RuntimeError, match="make migrate"):
         Store(url)
     with pytest.raises(RuntimeError, match="make migrate"):
@@ -37,8 +38,8 @@ def test_empty_database_requires_explicit_migration(tmp_path):
 
 
 @pytest.mark.parametrize("with_auth", [False, True])
-def test_legacy_adoption_preserves_existing_rows(tmp_path, with_auth):
-    url = f"sqlite:///{tmp_path / 'legacy.db'}"
+def test_legacy_adoption_preserves_existing_rows(empty_database_url, with_auth):
+    url = empty_database_url
     engine = create_engine(url)
     Base.metadata.create_all(engine)
     org_id = uuid4()
@@ -55,7 +56,7 @@ def test_legacy_adoption_preserves_existing_rows(tmp_path, with_auth):
             )
         )
     if with_auth:
-        metadata.create_all(engine)
+        import_module("remy.db.migrations.versions.0001_baseline").baseline().create_all(engine)
         user_id = str(uuid4())
         with engine.begin() as conn:
             conn.execute(insert(organizations).values(id=str(org_id), name="Legacy"))
