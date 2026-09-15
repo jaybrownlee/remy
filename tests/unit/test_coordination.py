@@ -133,7 +133,7 @@ def test_saved_legacy_report_renders_review_label_and_overlap_links(tmp_path):
         row("s3_account_level_public_access_blocks", "east"),
         row("s3_account_level_public_access_blocks", "west", region="us-west-2"),
     )
-    app = create_app(f"sqlite:///{tmp_path / 'reports.db'}")
+    app = create_app(f"sqlite:///{tmp_path / 'reports.db'}", demo_mode=True)
     app.state.store.save(result)
     with TestClient(app, base_url="http://localhost") as client:
         page = client.get(f"/reports/{result.report_id}")

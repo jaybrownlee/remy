@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added default-on local magic-link authentication, operator-provisioned organizations and memberships, tenant-bound sessions, CSRF checks, and persistent login-request limits. Explicit demo mode retains access to earlier sample reports.
+- Added database-protected audit records for login, logout, provisioning, and downloads; tested session revocation, cross-tenant access, concurrent link consumption, secure cookies, and credential redaction from the response-time ASGI scope.
+- Added a private development mailbox and setup instructions. Production delivery, migrations, organization switching, and PostgreSQL runtime verification remain pending; remote access stays disabled.
+
+- Completed guidance-handler coverage for all 95 pinned framework checks, adding the remaining 36 monitoring, network, certificate, load-balancer, and data-service plans.
+- Added explicit pinned-scanner limitations and AWS references to each new plan, including EKS/SageMaker default encryption, CloudFront default-behavior scope, and alarm-delivery limitations.
+- Verified complete-framework report and ZIP export behavior while preserving unknown findings and manual/context-dependent recommendations.
+
 - Added OpenSearch storage and node-to-node encryption guidance, including existing-domain eligibility, irreversible enablement, storage-tier prerequisites, and separate client HTTPS protection.
 - Linked OpenSearch recommendations targeting the same verified domain in reports and exports, including guidance without Terraform files.
 
@@ -17,4 +25,4 @@
 - Added EFS encrypted-replacement planning and backup-policy guidance with restore validation and no destructive source actions.
 - Added DAX replacement, DynamoDB key-selection, and point-in-time recovery guidance, including the pinned check's managed-key detection limitation.
 - Grouped password-policy findings that target the same AWS account so customers are warned to use one owning Terraform configuration.
-- Increased framework recommendation coverage from 6 to 59 of 95 checks; 48 generated Terraform examples pass the pinned validation harness.
+- Increased framework recommendation coverage from 6 to 95 of 95 checks. The unchanged 48 generated Terraform examples passed the pinned validation harness; new plans do not generate Terraform.

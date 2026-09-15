@@ -25,9 +25,12 @@ from remy.recommendations.identifiers import (
 from remy.recommendations.identifiers import (
     trail_name as _trail_name,
 )
+from remy.recommendations.monitoring import MONITORING_PLANS
+from remy.recommendations.network import NETWORK_PLANS
 from remy.recommendations.opensearch import OPENSEARCH_BUILDERS
 from remy.recommendations.rds import RDS_BUILDERS
 from remy.recommendations.s3 import S3_BUILDERS
+from remy.recommendations.services import SERVICE_PLANS
 from remy.reports.schema import Citation, Observation, Recommendation
 
 _ECFR_164_312 = (
@@ -167,6 +170,9 @@ SUPPORTED_CHECK_IDS = frozenset(
         *EFS_BUILDERS,
         *RDS_BUILDERS,
         *OPENSEARCH_BUILDERS,
+        *MONITORING_PLANS,
+        *NETWORK_PLANS,
+        *SERVICE_PLANS,
         "iam_password_policy_lowercase",
         "iam_password_policy_minimum_length_14",
         "iam_password_policy_number",
@@ -1395,6 +1401,9 @@ _CATALOG: dict[str, Callable[[Observation], Recommendation]] = {
     **EFS_BUILDERS,
     **RDS_BUILDERS,
     **OPENSEARCH_BUILDERS,
+    **{check: plan.build for check, plan in MONITORING_PLANS.items()},
+    **{check: plan.build for check, plan in NETWORK_PLANS.items()},
+    **{check: plan.build for check, plan in SERVICE_PLANS.items()},
 }
 
 

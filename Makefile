@@ -6,7 +6,7 @@ TERRAFORM ?= terraform
 
 dev:
 	mkdir -p .remy
-	uv run uvicorn remy.api.app:app --host 127.0.0.1 --port 8000
+	uv run uvicorn remy.api.app:app --host 127.0.0.1 --port 8000 --no-access-log
 
 fmt:
 	uv run ruff format .

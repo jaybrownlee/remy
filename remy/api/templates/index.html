@@ -44,6 +44,7 @@
         <h3>Explore a sample</h3>
         <p>Explore the public Prowler example with placeholder identifiers and suggested Terraform.</p>
         <form action="/reports/sample" method="post">
+          {% if request.state.identity %}<input type="hidden" name="csrf" value="{{ request.state.identity.csrf }}">{% endif %}
           <button class="button button-primary" type="submit">Generate sample report</button>
         </form>
       </article>
@@ -53,6 +54,7 @@
         <h3>Import Prowler JSON</h3>
         <p>Choose an exported Prowler AWS JSON-OCSF array. Findings are shown as saved scan observations; scan completeness is not independently verified.</p>
         <form action="/reports/import" method="post" enctype="multipart/form-data" class="upload-form">
+          {% if request.state.identity %}<input type="hidden" name="csrf" value="{{ request.state.identity.csrf }}">{% endif %}
           <label class="file-picker" for="scan-file">
             <span>Choose JSON file</span>
             <input id="scan-file" name="file" type="file" accept="application/json,.json" required>

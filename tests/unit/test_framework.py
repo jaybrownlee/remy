@@ -1,6 +1,9 @@
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+
+from remy.recommendations import catalog
 from remy.recommendations.framework import SOURCE_URL, check_ids, citations_for, framework
 from remy.reports.compose import compose_report
 
@@ -17,8 +20,13 @@ def test_pinned_framework_membership_and_multi_requirement_mapping() -> None:
     assert all(c.url.startswith("https://www.ecfr.gov/") for c in references)
 
 
-def test_unsupported_framework_finding_keeps_mapping_and_no_invented_code() -> None:
+def test_unsupported_framework_finding_keeps_mapping_and_no_invented_code(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import json
+
+    # Simulate a future missing handler while preserving its framework mapping.
+    monkeypatch.delitem(catalog._CATALOG, "redshift_cluster_public_access")
 
     rows = json.loads(Path("remy/data/prowler-aws-example.json").read_bytes())
     row = rows[0]

@@ -3,6 +3,9 @@ from datetime import UTC, datetime
 import pytest
 
 from remy.recommendations.catalog import SUPPORTED_CHECK_IDS, recommend
+from remy.recommendations.monitoring import MONITORING_PLANS
+from remy.recommendations.network import NETWORK_PLANS
+from remy.recommendations.services import SERVICE_PLANS
 from remy.reports.schema import Observation
 
 
@@ -31,6 +34,9 @@ def observation(
 
 def test_supported_check_ids_are_the_reviewed_bounded_catalog() -> None:
     assert {
+        *MONITORING_PLANS,
+        *NETWORK_PLANS,
+        *SERVICE_PLANS,
         "s3_bucket_level_public_access_block",
         "s3_account_level_public_access_blocks",
         "cloudtrail_multi_region_enabled",

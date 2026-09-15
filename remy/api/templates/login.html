@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Remy{% endblock %}
+{% block content %}
+<section class="shell workspace-section">
+  <h1>Sign in to Remy</h1>
+  {% if sent %}
+  <p>If this address has access, a sign-in link has been delivered. Open it in this browser within 15 minutes.</p>
+  <p>Local development delivery is saved in the private server mailbox.</p>
+  {% elif confirm %}
+  <p>Continue to sign in. This link can be used once.</p>
+  <form action="/login/confirm" method="post">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="token" value="{{ token }}">
+    <button class="button button-primary" type="submit">Confirm sign-in</button>
+  </form>
+  {% else %}
+  <form action="/login/new" method="post">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="email">Email address</label>
+    <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
+    <button class="button button-primary" type="submit">Send sign-in link</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

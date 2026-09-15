@@ -18,7 +18,16 @@
         <p class="prototype-note"><span aria-hidden="true">●</span> Local prototype · saved scans</p>
       </div>
       <div class="prototype-boundary">
-        <div class="shell">Live AWS connections and authentication are not available in this prototype.</div>
+        <div class="shell">Live AWS connections are not available in this local prototype.</div>
+        {% if request.state.identity %}
+        <div class="shell">
+          {{ request.state.identity.organization }} · {{ request.state.identity.email }}
+          <form action="/logout" method="post">
+            <input type="hidden" name="csrf" value="{{ request.state.identity.csrf }}">
+            <button type="submit">Sign out</button>
+          </form>
+        </div>
+        {% endif %}
       </div>
     </header>
 
