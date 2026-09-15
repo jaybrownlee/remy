@@ -6,7 +6,7 @@ TERRAFORM ?= terraform
 
 dev:
 	mkdir -p .remy
-	uv run uvicorn remy.api.app:app --host 127.0.0.1 --port 8000 --no-access-log
+	uv run uvicorn remy.api.app:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log
 
 fmt:
 	uv run ruff format .
@@ -21,7 +21,7 @@ test:
 
 migrate:
 	mkdir -p .remy
-	REMY_DATABASE_URL="$(REMY_DATABASE_URL)" uv run python -c 'import os; from remy.db.store import Store; Store(os.environ["REMY_DATABASE_URL"]); print("prototype report table ready")'
+	uv run python -m remy.db.migrate
 
 test-terraform:
 	uv run python -m scripts.validate_terraform --terraform "$(TERRAFORM)"

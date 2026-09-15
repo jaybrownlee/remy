@@ -26,6 +26,8 @@ from sqlalchemy import (
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 
+from remy.db.migrate import require_current
+
 metadata = MetaData()
 organizations = Table(
     "auth_organizations",
@@ -114,26 +116,7 @@ class AuthStore:
             def enable_foreign_keys(connection: sqlite3.Connection, record: object) -> None:
                 connection.execute("PRAGMA foreign_keys=ON")
 
-        metadata.create_all(self.engine)
-        with self.engine.begin() as conn:
-            if self.engine.dialect.name == "sqlite":
-                for operation in ("UPDATE", "DELETE"):
-                    conn.exec_driver_sql(
-                        f"CREATE TRIGGER IF NOT EXISTS auth_audit_no_{operation.lower()} "
-                        f"BEFORE {operation} ON auth_audit BEGIN "
-                        "SELECT RAISE(ABORT, 'audit records are immutable'); END"
-                    )
-            elif self.engine.dialect.name == "postgresql":
-                conn.exec_driver_sql(
-                    "CREATE OR REPLACE FUNCTION remy_auth_audit_immutable() RETURNS trigger "
-                    "LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'audit records are immutable'; "
-                    "END $$"
-                )
-                conn.exec_driver_sql("DROP TRIGGER IF EXISTS auth_audit_immutable ON auth_audit")
-                conn.exec_driver_sql(
-                    "CREATE TRIGGER auth_audit_immutable BEFORE UPDATE OR DELETE ON auth_audit "
-                    "FOR EACH ROW EXECUTE FUNCTION remy_auth_audit_immutable()"
-                )
+        require_current(self.engine)
 
     def record(self, identity: Identity, action: str, target: str = "") -> None:
         with self.engine.begin() as conn:

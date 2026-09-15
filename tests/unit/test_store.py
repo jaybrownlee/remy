@@ -54,8 +54,8 @@ def make_report(
 
 
 @pytest.fixture
-def store() -> Store:
-    return Store("sqlite+pysqlite:///:memory:")
+def store(database_url) -> Store:
+    return Store(database_url)
 
 
 def test_save_get_and_list_newest_first(store: Store) -> None:

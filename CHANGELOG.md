@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added explicit Alembic migrations with a frozen baseline that preserves compatible prototype data and rejects detected schema drift. Application startup now checks schema version without creating tables or replacing triggers.
+- Added migration/adoption regression tests and PostgreSQL 16 CI coverage for database-backed tests, including an audit TRUNCATE guard. Local PostgreSQL execution remains unverified because Docker did not respond.
+
 - Added default-on local magic-link authentication, operator-provisioned organizations and memberships, tenant-bound sessions, CSRF checks, and persistent login-request limits. Explicit demo mode retains access to earlier sample reports.
 - Added database-protected audit records for login, logout, provisioning, and downloads; tested session revocation, cross-tenant access, concurrent link consumption, secure cookies, and credential redaction from the response-time ASGI scope.
 - Added a private development mailbox and setup instructions. Production delivery, migrations, organization switching, and PostgreSQL runtime verification remain pending; remote access stays disabled.

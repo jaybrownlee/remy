@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 from sqlalchemy.types import JSON
 
+from remy.db.migrate import require_current
 from remy.reports.schema import Report
 
 
@@ -40,7 +41,7 @@ class Store:
     def __init__(self, database_url: str) -> None:
         self._engine: Engine = create_engine(database_url)
         self._sessions = sessionmaker(bind=self._engine, expire_on_commit=False)
-        Base.metadata.create_all(self._engine)
+        require_current(self._engine)
 
     @contextmanager
     def _session(self) -> Iterator[Session]:

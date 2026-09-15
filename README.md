@@ -8,6 +8,7 @@ Requires Python 3.12 and uv.
 
 ```sh
 uv sync --frozen
+make migrate
 uv run python -m scripts.provision_user you@example.com "Your organization"
 make dev
 ```
@@ -20,7 +21,9 @@ Use the same hostname when requesting and opening links: cookies distinguish `lo
 
 For the previous unauthenticated sample workspace, run `REMY_DEMO_MODE=1 make dev`. Old demo reports remain in the demo organization; authenticated users do not inherit them. Demo mode must never be used for customer access.
 
-Reports persist in `.remy/reports.db`. Set `REMY_DATABASE_URL` to use another SQLAlchemy database URL. For direct Uvicorn launches without that variable, `REMY_DATA_DIR` changes the default SQLite directory. `make migrate` creates the prototype table; versioned migrations remain future work.
+Reports persist in `.remy/reports.db`. Set `REMY_DATABASE_URL` consistently for migrations, provisioning, and the server to use another SQLAlchemy database URL. For direct Python/Uvicorn launches without that variable, `REMY_DATA_DIR` changes the default SQLite directory; Makefile commands default to `.remy/reports.db`.
+
+`make migrate` runs versioned Alembic upgrades. Stop the server and back up an existing database before upgrading. The first revision adopts compatible prototype tables without replacing reports, users, sessions, or audit records. Startup and provisioning refuse an unversioned or outdated database; they no longer create tables or replace audit triggers. Direct server launches use `uvicorn remy.api.app:create_app --factory --host 127.0.0.1 --no-access-log`. See the [database upgrade runbook](docs/runbooks/database.md) for backup, verification, and PostgreSQL testing.
 
 ## Implemented checkpoint
 
@@ -33,7 +36,7 @@ Reports persist in `.remy/reports.db`. Set `REMY_DATABASE_URL` to use another SQ
 - Tenant-scoped history, reports, imports, and exports. Membership is checked on every authenticated request. Login, logout, provisioning, and downloads produce audit records protected against UPDATE/DELETE by database triggers.
 - Loopback-only HTTP boundary, same-origin form protection, bounded uploads, and escaped report content.
 
-This is a local prototype with development-only link delivery, not a customer-facing service. Production email, versioned migrations, PostgreSQL integration verification, session cleanup, organization switching, and production security boundaries remain unfinished. Both membership roles currently have the same report permissions; membership administration remains operator-only. Raw uploaded files are not retained, but selected metadata and finding descriptions are persisted; heuristic redaction is not a comprehensive secret scanner.
+This is a local prototype with development-only link delivery, not a customer-facing service. Production email, PostgreSQL integration verification, session cleanup, organization switching, and production security boundaries remain unfinished. Both membership roles currently have the same report permissions; membership administration remains operator-only. Raw uploaded files are not retained, but selected metadata and finding descriptions are persisted; heuristic redaction is not a comprehensive secret scanner.
 
 HIPAA mappings now come from the pinned Prowler framework where available, with source links; applicability still needs review. Generated Terraform examples are checked with Terraform 1.14.0 and AWS provider 6.0.0, but not against customer state. Known template targets are compared for possible shared-setting overlaps. Related items and unknown targets are flagged in new reports and downloads; changes are not merged automatically. The ZIP is a collection of suggestions, not a combined deployment module.
 
@@ -53,7 +56,7 @@ Tests cover normalization, malformed and duplicate records, stable identities, u
 ## Next milestones
 
 1. Coverage handlers now exist for every pinned framework check. Remaining recommendation work includes customer-specific Terraform generation, broader dependency/conflict handling, and regulatory applicability review.
-2. Finish authentication operations: versioned database migrations, PostgreSQL verification, expired-credential cleanup, organization switching, production mail delivery, and production security boundaries.
+2. Finish authentication operations: PostgreSQL verification, expired-credential cleanup, organization switching, production mail delivery, and production security boundaries.
 3. Read-only AWS onboarding, pinned Prowler execution, queued scans, completeness tracking, and explicit PASS-based finding updates.
 4. Operational readiness, customer acceptance tests, and deployment.
 

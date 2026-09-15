@@ -128,12 +128,12 @@ def test_cloudtrail_uses_home_region_and_requires_confirmable_identity():
     assert replica.change_target is None
 
 
-def test_saved_legacy_report_renders_review_label_and_overlap_links(tmp_path):
+def test_saved_legacy_report_renders_review_label_and_overlap_links(database_url):
     result = report(
         row("s3_account_level_public_access_blocks", "east"),
         row("s3_account_level_public_access_blocks", "west", region="us-west-2"),
     )
-    app = create_app(f"sqlite:///{tmp_path / 'reports.db'}", demo_mode=True)
+    app = create_app(database_url, demo_mode=True)
     app.state.store.save(result)
     with TestClient(app, base_url="http://localhost") as client:
         page = client.get(f"/reports/{result.report_id}")

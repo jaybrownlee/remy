@@ -27,8 +27,8 @@ def login(client, mailbox, email):
     return result
 
 
-def test_expiry_replay_browser_binding_and_hash_storage(tmp_path):
-    auth = AuthStore(f"sqlite:///{tmp_path / 'auth.db'}")
+def test_expiry_replay_browser_binding_and_hash_storage(database_url):
+    auth = AuthStore(database_url)
     auth.provision("a@example.com", "A")
     token = auth.issue("A@example.com", "browser", "peer", now=100)
     assert token
@@ -46,8 +46,8 @@ def test_expiry_replay_browser_binding_and_hash_storage(tmp_path):
     assert session not in stored and token not in stored
 
 
-def test_only_one_concurrent_consumer_can_sign_in(tmp_path):
-    auth = AuthStore(f"sqlite:///{tmp_path / 'auth.db'}")
+def test_only_one_concurrent_consumer_can_sign_in(database_url):
+    auth = AuthStore(database_url)
     auth.provision("a@example.com", "A")
     token = auth.issue("a@example.com", "browser", "peer")
     with ThreadPoolExecutor(max_workers=2) as pool:
@@ -55,8 +55,8 @@ def test_only_one_concurrent_consumer_can_sign_in(tmp_path):
     assert sum(result is not None for result in outcomes) == 1
 
 
-def test_rate_limits_and_revocation(tmp_path):
-    auth = AuthStore(f"sqlite:///{tmp_path / 'auth.db'}")
+def test_rate_limits_and_revocation(database_url):
+    auth = AuthStore(database_url)
     org = auth.provision("a@example.com", "A")
     tokens = [auth.issue("a@example.com", "browser", "peer", now=100) for _ in range(6)]
     assert all(tokens[:5]) and tokens[-1] is None
@@ -67,25 +67,25 @@ def test_rate_limits_and_revocation(tmp_path):
     assert auth.identify(session, now=102) is None
 
 
-def test_audit_database_rejects_mutation(tmp_path):
-    auth = AuthStore(f"sqlite:///{tmp_path / 'auth.db'}")
+def test_audit_database_rejects_mutation(database_url):
+    auth = AuthStore(database_url)
     auth.provision("a@example.com", "A")
     for statement in [delete(audit), update(audit).values(action="tampered")]:
         with pytest.raises(DatabaseError), auth.engine.begin() as conn:
             conn.execute(statement)
 
 
-def test_membership_foreign_keys_are_enforced(tmp_path):
-    auth = AuthStore(f"sqlite:///{tmp_path / 'auth.db'}")
+def test_membership_foreign_keys_are_enforced(database_url):
+    auth = AuthStore(database_url)
     with pytest.raises(DatabaseError), auth.engine.begin() as conn:
         conn.execute(insert(memberships).values(user_id="missing", org_id="missing", role="owner"))
 
 
-def test_confirmation_query_is_redacted_and_https_cookie_is_secure(tmp_path):
+def test_confirmation_query_is_redacted_and_https_cookie_is_secure(database_url):
     mailbox = []
     observed = []
     app = create_app(
-        f"sqlite:///{tmp_path / 'auth.db'}",
+        database_url,
         demo_mode=False,
         public_url="https://localhost",
         deliver=lambda email, url: mailbox.append((email, url)),
@@ -122,10 +122,10 @@ def test_confirmation_query_is_redacted_and_https_cookie_is_secure(tmp_path):
         )
 
 
-def test_authenticated_report_tenants_csrf_logout_and_download_audit(tmp_path):
+def test_authenticated_report_tenants_csrf_logout_and_download_audit(database_url):
     mailbox = []
     app = create_app(
-        f"sqlite:///{tmp_path / 'auth.db'}",
+        database_url,
         demo_mode=False,
         deliver=lambda email, url: mailbox.append((email, url)),
     )
@@ -156,10 +156,10 @@ def test_authenticated_report_tenants_csrf_logout_and_download_audit(tmp_path):
         assert app.state.auth.identify(session) is None
 
 
-def test_login_does_not_disclose_membership_or_accept_get_consumption(tmp_path):
+def test_login_does_not_disclose_membership_or_accept_get_consumption(database_url):
     mailbox = []
     app = create_app(
-        f"sqlite:///{tmp_path / 'auth.db'}",
+        database_url,
         demo_mode=False,
         deliver=lambda email, url: mailbox.append((email, url)),
     )

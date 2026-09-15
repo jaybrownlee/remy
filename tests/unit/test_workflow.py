@@ -17,8 +17,8 @@ SAMPLE = Path("remy/data/prowler-aws-example.json").read_bytes()
 
 
 @pytest.fixture
-def client(tmp_path):
-    app = create_app(f"sqlite:///{tmp_path / 'reports.db'}", demo_mode=True)
+def client(database_url):
+    app = create_app(database_url, demo_mode=True)
     with TestClient(app, base_url="http://localhost") as test_client:
         yield test_client
 
