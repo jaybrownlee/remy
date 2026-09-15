@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Remy turns saved security scan findings into a remediation report.">
+    <title>{% block title %}Remy{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to report content</a>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="/" aria-label="Remy home">
+          <span class="brand-mark" aria-hidden="true">R</span>
+          <span>Remy</span>
+        </a>
+        <p class="prototype-note"><span aria-hidden="true">●</span> Local prototype · saved scans</p>
+      </div>
+      <div class="prototype-boundary">
+        <div class="shell">Live AWS connections and authentication are not available in this prototype.</div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <p>Remy organizes saved scan findings into reviewable remediation guidance.</p>
+        <a href="/">All saved reports</a>
+      </div>
+    </footer>
+  </body>
+</html>

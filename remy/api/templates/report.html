@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}{{ report.source_name }} · Remy{% endblock %}
+
+{% block content %}
+  <div class="shell report-page">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Saved reports</a><span aria-hidden="true">/</span><span>{{ report.source_name }}</span>
+    </nav>
+
+    <section class="report-intro" aria-labelledby="report-title">
+      <div class="report-title-block">
+        <p class="eyebrow">Saved remediation report</p>
+        <h1 id="report-title">{{ report.source_name }}</h1>
+        <p class="report-lede">A reviewable plan based on the uploaded scan. A finding is an observed technical result, not a determination of compliance or a claim that Remy made a change.</p>
+      </div>
+      <div class="report-actions" aria-label="Report downloads">
+        <a class="button button-secondary" href="/reports/{{ report.report_id }}/download/json">Download JSON</a>
+        <a class="button button-secondary" href="/reports/{{ report.report_id }}/download/pdf">Download PDF</a>
+        <a class="button button-primary" href="/reports/{{ report.report_id }}/download/terraform">Download Terraform</a>
+      </div>
+    </section>
+
+    <dl class="report-facts">
+      <div><dt>Source</dt><dd>{{ report.source_kind }}</dd></div>
+      <div><dt>Generated</dt><dd>{{ report.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</dd></div>
+      <div><dt>Report ID</dt><dd><code class="inline-id">{{ report.report_id }}</code></dd></div>
+    </dl>
+
+    {% if report.warnings %}
+      <section class="warning-panel" aria-labelledby="warnings-heading">
+        <div class="warning-icon" aria-hidden="true">!</div>
+        <div>
+          <h2 id="warnings-heading">Coverage and source-data notes</h2>
+          <p>Review these limitations before using the guidance. They do not remove findings from this report.</p>
+          <ul>
+            {% for warning in report.warnings %}<li>{{ warning }}</li>{% endfor %}
+          </ul>
+        </div>
+      </section>
+    {% endif %}
+
+    <section class="stats" aria-label="Report summary">
+      <div class="stat-card stat-failed"><span class="stat-label">Failed findings</span><strong>{{ report.items | length }}</strong><span>Included in this report</span></div>
+      <div class="stat-card"><span class="stat-label">Passed observations</span><strong>{{ report.pass_count }}</strong><span>Recorded in the source</span></div>
+      <div class="stat-card"><span class="stat-label">Manual observations</span><strong>{{ report.manual_count }}</strong><span>Recorded in the source</span></div>
+      <div class="stat-card"><span class="stat-label">Total observations</span><strong>{{ report.observation_count }}</strong><span>Reported by the source</span></div>
+    </section>
+
+    <section class="coverage-notice" aria-labelledby="coverage-heading">
+      <div><p class="eyebrow">Coverage promise</p><h2 id="coverage-heading">Every failed observation is represented below.</h2></div>
+      <p>Unsupported guidance stays visible with its reason. Guidance can require review, context, or a manual action; it never means a change was applied.</p>
+    </section>
+
+    <section class="finding-section" aria-labelledby="findings-heading">
+      <div class="section-heading findings-heading">
+        <div><p class="eyebrow">Prioritized findings</p><h2 id="findings-heading">{{ report.items | length }} item{{ '' if report.items | length == 1 else 's' }} to review</h2></div>
+        <p>IDs are stable and can be copied from this page or an export.</p>
+      </div>
+
+      {% if report.items %}
+        <div class="finding-list">
+          {% for item in report.items %}
+            {% set observation = item.observation %}
+            {% set recommendation = item.recommendation %}
+            <article class="finding-card" id="item-{{ item.item_id }}" aria-labelledby="finding-{{ item.item_id }}">
+              <header class="finding-header">
+                <div class="finding-number">{{ item.line_number }}</div>
+                <div class="finding-heading">
+                  <div class="finding-kickers">
+                    <span class="check-id">{{ observation.check_id }}</span>
+                    <span class="service-tag">{{ observation.service }}</span>
+                    <span class="priority-chip priority-{{ 'critical' if item.priority_score >= 80 else 'high' if item.priority_score >= 60 else 'medium' if item.priority_score >= 35 else 'low' }}">Priority {{ item.priority_score }}</span>
+                  </div>
+                  <h3 id="finding-{{ item.item_id }}">{{ observation.title }}</h3>
+                  <p class="resource-line"><span>{{ observation.resource_name }}</span><span aria-hidden="true">·</span><span>{{ observation.region }}</span><span aria-hidden="true">·</span><span>Observed {{ observation.status }}</span></p>
+                </div>
+                <span class="guidance-chip guidance-{{ recommendation.status }}">{{ recommendation.status.replace('_', ' ') }}</span>
+              </header>
+
+              <div class="item-identity">
+                <span>Item {{ item.line_number }}</span>
+                <code>{{ item.item_id }}</code>
+              </div>
+
+              {% if item.coordination_notes %}
+              <section class="item-section" aria-label="Shared-setting review">
+                <h4>Shared-setting review</h4>
+                {% for note in item.coordination_notes %}<p>{{ note }}</p>{% endfor %}
+                {% if item.related_item_ids %}
+                <p>Review with:
+                  {% for related in item.related_item_ids %}
+                  <a href="#item-{{ related }}">Item {{ related }}</a>{% if not loop.last %}, {% endif %}
+                  {% endfor %}
+                </p>
+                {% endif %}
+              </section>
+              {% endif %}
+              <div class="finding-grid">
+                <div class="finding-main">
+                  <section class="item-section">
+                    <h4>What was observed</h4>
+                    <p>{{ observation.detail }}</p>
+                  </section>
+                  <section class="item-section">
+                    <h4>Recommended approach</h4>
+                    <p>{{ recommendation.what }}</p>
+                    <p>{{ recommendation.why }}</p>
+                    <p>{{ recommendation.change }}</p>
+                  </section>
+
+                  {% if recommendation.terraform %}
+                    <section class="item-section code-section">
+                      <div class="code-heading"><div><h4>Suggested Terraform</h4><p>Review and adapt before applying.</p></div>{% if recommendation.filename %}<span>{{ recommendation.filename }}</span>{% endif %}</div>
+                      <pre><code>{{ recommendation.terraform }}</code></pre>
+                    </section>
+                  {% else %}
+                    <section class="no-code-note">
+                      <h4>{% if recommendation.status == 'unsupported' %}Guidance coverage gap{% elif recommendation.status == 'manual_action' %}Manual action required{% else %}More context is required{% endif %}</h4>
+                      <p>{{ recommendation.change }}</p>
+                    </section>
+                  {% endif %}
+                </div>
+
+                <aside class="finding-sidebar">
+                  <section class="side-section">
+                    <h4>Why this is prioritized</h4>
+                    {% if item.priority_reasons %}<ul class="compact-list">{% for reason in item.priority_reasons %}<li>{{ reason }}</li>{% endfor %}</ul>{% else %}<p>Priority reflects the saved scan finding.</p>{% endif %}
+                  </section>
+                  <section class="side-section impact-section">
+                    <h4>Potential impact</h4><p>{{ recommendation.impact }}</p>
+                  </section>
+                  <section class="side-section">
+                    <h4>Validation</h4><p>{{ recommendation.validation }}</p>
+                  </section>
+                </aside>
+              </div>
+
+              <div class="item-details">
+                <section>
+                  <h4>Assumptions and inputs</h4>
+                  {% if recommendation.assumptions %}<ul>{% for assumption in recommendation.assumptions %}<li>{{ assumption }}</li>{% endfor %}</ul>{% else %}<p>No additional assumptions were recorded for this draft.</p>{% endif %}
+                </section>
+                <section>
+                  <h4>Review and next steps</h4>
+                  {% if recommendation.steps %}<ol>{% for step in recommendation.steps %}<li>{{ step }}</li>{% endfor %}</ol>{% else %}<p>Review the observed configuration with the resource owner before making a change.</p>{% endif %}
+                </section>
+                <section>
+                  <h4>HIPAA mapping</h4>
+                  {% if recommendation.citations %}
+                    <ul class="citation-list">
+                      {% for citation in recommendation.citations %}
+                        <li><a href="{{ citation.url }}" rel="noopener noreferrer" target="_blank">{{ citation.section }} · {{ citation.title }}</a><span class="confidence confidence-{{ citation.confidence }}">HIPAA mapping — needs review</span><p>{{ citation.note }}</p>{% if citation.source_url %}<a href="{{ citation.source_url }}" rel="noopener noreferrer" target="_blank">Prowler mapping source</a>{% endif %}</li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p>No regulatory citation was supplied with this draft recommendation.</p>
+                  {% endif %}
+                </section>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-mark" aria-hidden="true">✓</div>
+          <h3>No failed findings in this saved report</h3>
+          <p>The source recorded {{ report.observation_count }} observation{{ '' if report.observation_count == 1 else 's' }}. This report has no failed observations to turn into remediation items.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

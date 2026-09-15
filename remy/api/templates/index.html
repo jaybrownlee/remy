@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Remy · Saved remediation reports{% endblock %}
+
+{% block content %}
+  <section class="hero">
+    <div class="shell hero-layout">
+      <div>
+        <p class="eyebrow">A report-first security workflow</p>
+        <h1>From findings to a remediation plan</h1>
+        <p class="hero-copy">Upload saved Prowler JSON or generate a sample report. Remy keeps every observed finding visible and turns it into guidance you can review with your administrator.</p>
+        <p class="boundary-copy">No repository connection, pull request, or infrastructure apply is part of this prototype.</p>
+      </div>
+      <aside class="hero-aside" aria-label="What a report includes">
+        <p class="eyebrow">Each saved report includes</p>
+        <ul class="check-list">
+          <li>Every failed check and resource</li>
+          <li>Priorities and plain-language context</li>
+          <li>Suggested Terraform or actionable next steps</li>
+        </ul>
+      </aside>
+    </div>
+  </section>
+
+  <section class="shell workspace-section" aria-labelledby="start-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Start a report</p>
+        <h2 id="start-heading">Use a saved scan</h2>
+      </div>
+      <p>Reports are saved locally on this computer.</p>
+    </div>
+
+    {% if error %}
+      <div class="alert alert-error" role="alert">
+        <strong>We couldn’t create that report.</strong>
+        <span>{{ error }}</span>
+      </div>
+    {% endif %}
+
+    <div class="start-grid">
+      <article class="action-card sample-card">
+        <div class="card-icon" aria-hidden="true">✦</div>
+        <h3>Explore a sample</h3>
+        <p>Explore the public Prowler example with placeholder identifiers and suggested Terraform.</p>
+        <form action="/reports/sample" method="post">
+          <button class="button button-primary" type="submit">Generate sample report</button>
+        </form>
+      </article>
+
+      <article class="action-card">
+        <div class="card-icon muted-icon" aria-hidden="true">↑</div>
+        <h3>Import Prowler JSON</h3>
+        <p>Choose an exported Prowler AWS JSON-OCSF array. Findings are shown as saved scan observations; scan completeness is not independently verified.</p>
+        <form action="/reports/import" method="post" enctype="multipart/form-data" class="upload-form">
+          <label class="file-picker" for="scan-file">
+            <span>Choose JSON file</span>
+            <input id="scan-file" name="file" type="file" accept="application/json,.json" required>
+          </label>
+          <button class="button button-secondary" type="submit">Import and create report</button>
+        </form>
+      </article>
+    </div>
+  </section>
+
+  <section class="shell reports-section" aria-labelledby="reports-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Local history</p>
+        <h2 id="reports-heading">Saved reports</h2>
+      </div>
+      {% if reports %}<p>{{ reports | length }} saved report{{ '' if reports | length == 1 else 's' }}</p>{% endif %}
+    </div>
+
+    {% if reports %}
+      <div class="report-list">
+        {% for report in reports %}
+          <a class="report-row" href="/reports/{{ report.report_id }}">
+            <div class="report-row-main">
+              <span class="report-ready"><span aria-hidden="true">●</span> Ready</span>
+              <h3>{{ report.source_name }}</h3>
+              <p>Created {{ report.created_at.strftime('%Y-%m-%d %H:%M UTC') }} · {{ report.items | length }} failed finding{{ '' if report.items | length == 1 else 's' }}</p>
+            </div>
+            <div class="report-row-meta">
+              <span class="source-kind">{{ report.source_kind }}</span>
+              <span class="row-arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-mark" aria-hidden="true">⌁</div>
+        <h3>No saved reports yet</h3>
+        <p>Generate the sample or import a Prowler JSON file to see a complete remediation report here.</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

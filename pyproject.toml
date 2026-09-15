@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "remy"
+version = "0.1.0"
+description = "Report-first AWS remediation guidance prototype"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi==0.115.12",
+  "jinja2==3.1.6",
+  "psycopg[binary]==3.2.9",
+  "pydantic==2.11.5",
+  "python-multipart==0.0.20",
+  "reportlab==4.4.1",
+  "sqlalchemy==2.0.41",
+  "uvicorn[standard]==0.34.2",
+]
+
+[dependency-groups]
+dev = [
+  "httpx==0.28.1",
+  "mypy==1.15.0",
+  "pytest==8.3.5",
+  "pytest-cov==6.1.1",
+  "ruff==0.11.12",
+  "types-reportlab==5.0.0.20260911",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["remy"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["remy"]
