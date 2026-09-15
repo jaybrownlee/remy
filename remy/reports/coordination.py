@@ -6,7 +6,7 @@ Findings are never merged. No AWS state, Terraform state, or customer inputs are
 import re
 from collections import defaultdict
 
-from remy.recommendations.catalog import _bucket_name, _trail_name
+from remy.recommendations.identifiers import bucket_name, trail_name
 from remy.reports.schema import ChangeTarget, ReportItem, SharedChange
 
 _ACCOUNT_SETTINGS = {
@@ -14,6 +14,12 @@ _ACCOUNT_SETTINGS = {
     "account_maintain_different_contact_details_to_security_billing_and_operations": (
         "AWS alternate contacts"
     ),
+    "iam_password_policy_lowercase": "IAM account password policy",
+    "iam_password_policy_minimum_length_14": "IAM account password policy",
+    "iam_password_policy_number": "IAM account password policy",
+    "iam_password_policy_reuse_24": "IAM account password policy",
+    "iam_password_policy_symbol": "IAM account password policy",
+    "iam_password_policy_uppercase": "IAM account password policy",
 }
 _REGIONAL_SETTINGS = {
     "ec2_ebs_default_encryption": "EBS default encryption",
@@ -23,6 +29,8 @@ _REGIONAL_SETTINGS = {
 _BUCKET_SETTINGS = {
     "s3_bucket_level_public_access_block": "S3 bucket public access block",
     "s3_bucket_object_versioning": "S3 bucket versioning",
+    "s3_bucket_default_encryption": "S3 bucket default encryption",
+    "s3_bucket_server_access_logging_enabled": "S3 server access logging",
 }
 
 
@@ -35,7 +43,7 @@ def target_for(item: ReportItem) -> ChangeTarget | None:
     if check in _ACCOUNT_SETTINGS:
         return ChangeTarget(account_id=account, setting=_ACCOUNT_SETTINGS[check], resource=account)
     if check in _BUCKET_SETTINGS:
-        bucket = _bucket_name(observation)
+        bucket = bucket_name(observation)
         if bucket:
             return ChangeTarget(
                 account_id=account, setting=_BUCKET_SETTINGS[check], resource=bucket
@@ -51,7 +59,7 @@ def target_for(item: ReportItem) -> ChangeTarget | None:
             resource=account,
         )
     if check == "cloudtrail_multi_region_enabled":
-        trail = _trail_name(observation)
+        trail = trail_name(observation)
         if trail:
             home = re.fullmatch(
                 r"arn:(?:aws|aws-cn|aws-us-gov):cloudtrail:([^:]+):([0-9]{12}):trail/(.+)",

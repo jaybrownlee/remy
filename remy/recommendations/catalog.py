@@ -12,6 +12,21 @@ import json
 import re
 from collections.abc import Callable
 
+from remy.recommendations.cloudtrail import CLOUDTRAIL_BUILDERS
+from remy.recommendations.dynamodb import DYNAMODB_BUILDERS
+from remy.recommendations.ec2 import EC2_BUILDERS
+from remy.recommendations.efs import EFS_BUILDERS
+from remy.recommendations.identifiers import (
+    AWS_REGION_RE as _AWS_REGION_RE,
+)
+from remy.recommendations.identifiers import (
+    bucket_name as _bucket_name,
+)
+from remy.recommendations.identifiers import (
+    trail_name as _trail_name,
+)
+from remy.recommendations.rds import RDS_BUILDERS
+from remy.recommendations.s3 import S3_BUILDERS
 from remy.reports.schema import Citation, Observation, Recommendation
 
 _ECFR_164_312 = (
@@ -43,6 +58,26 @@ _TF_CLOUDTRAIL = (
 _AWS_ROOT_MFA = (
     "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html#id_root-user_manage_mfa"
 )
+_AWS_ROOT_ACCESS_KEYS = (
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user_manage_delete-key.html"
+)
+_AWS_ROOT_HARDWARE_MFA = (
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/enable-hw-mfa-for-root.html"
+)
+_AWS_IAM_USER_MFA = (
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable_cliapi.html"
+)
+_AWS_ACCESS_KEYS = "https://docs.aws.amazon.com/IAM/latest/UserGuide/securing_access-keys.html"
+_AWS_IAM_POLICY_MANAGEMENT = (
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_manage.html"
+)
+_AWS_IAM_POLICY_VALIDATION = (
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-policy-validation.html"
+)
+_AWS_MARKETPLACE_AUTHORIZATION = (
+    "https://docs.aws.amazon.com/service-authorization/latest/reference/"
+    "list_marketplace-agreement.html"
+)
 _AWS_ACCESS_ANALYZER = (
     "https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-create-external.html"
 )
@@ -72,16 +107,27 @@ _AWS_GUARDDUTY = "https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_sett
 _TF_GUARDDUTY = (
     "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_detector"
 )
-_PROWLER_HUB = "https://hub.prowler.com/check/"
-
-_S3_BUCKET_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$")
-_S3_ARN_RE = re.compile(r"^arn:(?:aws|aws-cn|aws-us-gov):s3:::(?P<bucket>[^/]+)$")
-_TRAIL_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{1,126}[A-Za-z0-9]$")
-_TRAIL_ARN_RE = re.compile(
-    r"^arn:(?:aws|aws-cn|aws-us-gov):cloudtrail:[^:]+:\d{12}:trail/(?P<name>[^/]+)$"
+_AWS_GUARDDUTY_FINDINGS = (
+    "https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings-summary.html"
 )
-_IP_ADDRESS_RE = re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")
-_AWS_REGION_RE = re.compile(r"^(?:af|ap|ca|cn|eu|il|me|mx|sa|us)-[a-z0-9-]+-\d+$")
+_AWS_EC2_INSTANCE_LIFECYCLE = (
+    "https://docs.aws.amazon.com/prescriptive-guidance/latest/strategy-automating-patching/"
+    "operationalize-and-optimize.html"
+)
+_AWS_KMS_ROTATION = (
+    "https://docs.aws.amazon.com/kms/latest/developerguide/rotating-keys-enable.html"
+)
+_AWS_NITRO_KMS_ATTESTATION = (
+    "https://docs.aws.amazon.com/kms/latest/developerguide/conditions-nitro-enclave.html"
+)
+_AWS_IAM_PASSWORD_POLICY = (
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_passwords_account-policy.html"
+)
+_TF_IAM_PASSWORD_POLICY = (
+    "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/"
+    "iam_account_password_policy"
+)
+_PROWLER_HUB = "https://hub.prowler.com/check/"
 
 SUPPORTED_CHECK_IDS = frozenset(
     {
@@ -89,11 +135,42 @@ SUPPORTED_CHECK_IDS = frozenset(
         "s3_account_level_public_access_blocks",
         "cloudtrail_multi_region_enabled",
         "iam_root_mfa_enabled",
+        "iam_no_root_access_key",
+        "iam_root_hardware_mfa_enabled",
+        "iam_user_mfa_enabled_console_access",
+        "iam_rotate_access_key_90_days",
+        "iam_user_accesskey_unused",
+        "iam_user_console_access_unused",
+        "iam_aws_attached_policy_no_administrative_privileges",
+        "iam_customer_attached_policy_no_administrative_privileges",
+        "iam_inline_policy_no_administrative_privileges",
+        "iam_inline_policy_no_wildcard_marketplace_subscribe",
+        "iam_policy_no_wildcard_marketplace_subscribe",
         "accessanalyzer_enabled",
         "account_maintain_different_contact_details_to_security_billing_and_operations",
         "ec2_ebs_default_encryption",
         "s3_bucket_object_versioning",
         "guardduty_is_enabled",
+        "guardduty_no_high_severity_findings",
+        "ec2_instance_older_than_specific_days",
+        "kms_cmk_rotation_enabled",
+        "kms_key_enclave_attestation_bypassable_path",
+        "kms_key_enclave_attestation_not_enforced",
+        "kms_key_enclave_attestation_pcr_mismatch",
+        "kms_key_enclave_attestation_unknown_image",
+        "kms_key_enclave_debug_attestation_detected",
+        *S3_BUILDERS,
+        *CLOUDTRAIL_BUILDERS,
+        *DYNAMODB_BUILDERS,
+        *EC2_BUILDERS,
+        *EFS_BUILDERS,
+        *RDS_BUILDERS,
+        "iam_password_policy_lowercase",
+        "iam_password_policy_minimum_length_14",
+        "iam_password_policy_number",
+        "iam_password_policy_reuse_24",
+        "iam_password_policy_symbol",
+        "iam_password_policy_uppercase",
     }
 )
 
@@ -109,42 +186,6 @@ def _draft_citation(section: str, title: str, *, url: str = _ECFR_164_312) -> Ci
             "establish HIPAA noncompliance."
         ),
     )
-
-
-def _valid_bucket_name(value: str) -> bool:
-    """Validate a general-purpose S3 bucket name before rendering it as a default."""
-    if not _S3_BUCKET_RE.fullmatch(value):
-        return False
-    if ".." in value or _IP_ADDRESS_RE.fullmatch(value):
-        return False
-    return not (
-        value.startswith("xn--")
-        or value.startswith("sthree-")
-        or value.startswith("amzn_s3_demo_")
-        or value.endswith("-s3alias")
-        or value.endswith("--ol-s3")
-        or value.endswith(".mrap")
-        or value.endswith("--x-s3")
-        or value.endswith("--table-s3")
-    )
-
-
-def _bucket_name(observation: Observation) -> str | None:
-    if _valid_bucket_name(observation.resource_name):
-        return observation.resource_name
-    match = _S3_ARN_RE.fullmatch(observation.resource_uid)
-    if match and _valid_bucket_name(match.group("bucket")):
-        return match.group("bucket")
-    return None
-
-
-def _trail_name(observation: Observation) -> str | None:
-    if _TRAIL_NAME_RE.fullmatch(observation.resource_name):
-        return observation.resource_name
-    match = _TRAIL_ARN_RE.fullmatch(observation.resource_uid)
-    if match and _TRAIL_NAME_RE.fullmatch(match.group("name")):
-        return match.group("name")
-    return None
 
 
 def _variable(name: str, description: str, default: str | None = None) -> str:
@@ -380,6 +421,522 @@ def _root_mfa(_observation: Observation) -> Recommendation:
             "For an eligible member account, review centralized root access and removal of unnecessary root credentials instead of recreating persistent root access.",
             "Document device custody and recovery, remove root access keys, avoid routine root use, and rerun the Prowler check.",
             f"AWS root-user and MFA reference: {_AWS_ROOT_MFA}",
+        ],
+    )
+
+
+def _root_access_key(_observation: Observation) -> Recommendation:
+    return Recommendation(
+        status="manual_action",
+        what=("Prowler observed one or two active access keys for the AWS account root user."),
+        why=(
+            "A root access key has unrestricted account authority and cannot be limited with an IAM "
+            "permissions policy. Long-lived root keys create a high-impact credential exposure risk."
+        ),
+        change=(
+            "Identify every dependency on each root access key, replace it with a least-privilege IAM "
+            "role or other workload identity, deactivate the root key, verify the replacement, and "
+            "then delete the key through an authorized root-user procedure."
+        ),
+        impact=(
+            "Deactivation or deletion immediately breaks any workload still using the key. A deleted "
+            "access key cannot be recovered, so usage evidence, an owner-approved migration, and a "
+            "tested replacement are required before deletion."
+        ),
+        citations=[_draft_citation("45 CFR 164.312(a)(2)(i)", "Unique user identification")],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "The finding does not identify workloads, scripts, people, or external systems that use the root key.",
+            "Remy does not collect, display, rotate, deactivate, or delete customer credentials.",
+            "AWS Organizations centralized root access may change the recovery and credential-removal procedure for a member account.",
+        ],
+        steps=[
+            "Confirm the account type and whether centralized root access is enabled in AWS Organizations.",
+            "Use approved credential-usage evidence and owner interviews to identify dependencies without copying the secret access key into Remy.",
+            "Replace each dependency with a least-privilege role or other short-lived credential mechanism and test it.",
+            "Using the authorized root-user process, deactivate the key first, monitor for failures, and delete it only after the migration is confirmed. Record the key ID, not the secret, in the change record.",
+            "Rerun the Prowler check and separately review root password, MFA, contacts, and recovery controls.",
+            f"AWS root access-key deletion reference: {_AWS_ROOT_ACCESS_KEYS}",
+        ],
+    )
+
+
+def _root_hardware_mfa(_observation: Observation) -> Recommendation:
+    return Recommendation(
+        status="manual_action",
+        what=(
+            "For a commercial-partition account with active root credentials, Prowler 5.42.0 did "
+            "not observe the root MFA state it classifies as hardware-backed. The result can mean "
+            "that MFA is absent or that Prowler observed a virtual MFA device."
+        ),
+        why=(
+            "Root credentials have unrestricted authority. A separately controlled physical factor "
+            "reduces reliance on a root password and a general-purpose authenticator device."
+        ),
+        change=(
+            "The account owner should review the actual registered root authenticators and recovery "
+            "model, then enroll an approved physical authenticator—preferring a phishing-resistant "
+            "security key where supported—or remove unnecessary member-account root credentials through "
+            "centralized root access."
+        ),
+        impact=(
+            "Changing root MFA requires secure custody, recovery planning, and access to the root-user "
+            "sign-in flow. Removing the old device too early or losing the new device and recovery "
+            "factors can delay emergency account access."
+        ),
+        citations=[_draft_citation("45 CFR 164.312(d)", "Person or entity authentication")],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "The Prowler check is limited to the commercial AWS partition and infers hardware status from account-summary and virtual-device data.",
+            "The finding alone does not identify the exact physical authenticator, its custodian, backup device, or recovery readiness.",
+            "Root MFA enrollment is a credential ceremony and is not represented as Terraform guidance.",
+        ],
+        steps=[
+            "Confirm whether the account retains individual root credentials or uses AWS Organizations centralized root access.",
+            "Have the authorized account owners inspect registered root authenticators and update verified account contact and recovery information.",
+            "If root sign-in remains enabled, enroll the approved physical authenticator using the AWS root-user console flow, verify it, document custody, and only then retire superseded devices.",
+            "Test the approved recovery procedure without exposing authentication seeds or one-time codes, then rerun both root MFA checks.",
+            f"AWS hardware MFA enrollment reference: {_AWS_ROOT_HARDWARE_MFA}",
+        ],
+    )
+
+
+def _iam_user_mfa(_observation: Observation) -> Recommendation:
+    return Recommendation(
+        status="manual_action",
+        what=(
+            "Prowler observed an IAM user with an enabled console password and no active MFA device."
+        ),
+        why=(
+            "A console password without MFA can allow account access when that password is stolen. "
+            "Long-lived IAM users also require explicit lifecycle and credential ownership."
+        ),
+        change=(
+            "Confirm whether the IAM user's console access is still required. Remove the login profile "
+            "if it is not; otherwise enroll an approved MFA device with the user and enforce the "
+            "organization's MFA-based access policy."
+        ),
+        impact=(
+            "Removing console access prevents direct password sign-in but does not remove access keys "
+            "or assumed-role access. MFA enrollment handles authentication secrets and activation "
+            "codes; generating a Terraform resource can put sensitive seed material in state and does "
+            "not complete secure custody or access-policy enforcement."
+        ),
+        citations=[_draft_citation("45 CFR 164.312(d)", "Person or entity authentication")],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "The finding does not establish whether this is a human, service, emergency, or obsolete IAM user.",
+            "The user's manager, identity-provider eligibility, device choice, access-key use, and recovery process require review.",
+            "Remy does not collect MFA seeds, QR codes, one-time codes, passwords, or recovery factors.",
+        ],
+        steps=[
+            "Confirm the IAM user's owner, purpose, recent activity, permissions, access keys, and eligibility for federation or IAM Identity Center.",
+            "If console access is unnecessary, remove the login profile through the customer's identity lifecycle process and verify that other credentials are handled separately.",
+            "If console access remains necessary, enroll an approved MFA device with the user, verify activation, and apply the customer's policy that requires MFA for sensitive actions.",
+            "Document recovery and offboarding ownership without storing authentication secrets in Remy, then rerun the Prowler check.",
+            f"AWS IAM-user MFA reference: {_AWS_IAM_USER_MFA}",
+        ],
+    )
+
+
+def _iam_access_key_lifecycle(observation: Observation) -> Recommendation:
+    stale = observation.check_id == "iam_user_accesskey_unused"
+    what = (
+        "Prowler observed an active IAM-user access key whose recorded last use is older than the "
+        "configured inactivity threshold. Prowler 5.42.0 defaults that threshold to 45 days."
+        if stale
+        else "Prowler observed an active IAM-user access key whose last rotation is more than 90 days old."
+    )
+    reason = "inactivity" if stale else "age"
+    return Recommendation(
+        status="manual_action",
+        what=what,
+        why=(
+            f"Long-lived access-key {reason} increases the time a copied credential can remain usable. "
+            "Recorded inactivity can support a removal decision, but it does not prove that no "
+            "infrequent or external dependency still uses the key."
+        ),
+        change=(
+            "Prefer replacing the IAM-user key with a role or another temporary-credential mechanism. "
+            "If a long-lived key is still required, create and distribute a replacement through the "
+            "customer's secret-management process, verify consumers, deactivate the old key, observe, "
+            "and then delete it."
+        ),
+        impact=(
+            "Rotating, deactivating, or deleting a key can immediately break scripts, workloads, CI "
+            "jobs, or external integrations. A deleted secret access key cannot be recovered. Creating "
+            "keys in generic Terraform also stores sensitive key material in Terraform state."
+        ),
+        citations=[
+            _draft_citation(
+                "45 CFR 164.308(a)(3)(ii)(C)",
+                "Workforce security — termination procedures",
+                url=_ECFR_164_308,
+            )
+        ],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "The observation does not identify every consumer, secret store, owner, permission use, or emergency dependency.",
+            "Last-used data and the Prowler threshold require confirmation against the customer's scan configuration and retention needs.",
+            "Remy does not generate, collect, display, distribute, rotate, deactivate, or delete customer access keys.",
+        ],
+        steps=[
+            "Confirm the IAM user owner, key ID, creation or rotation date, last-used service and Region, permissions, and all known consumers without copying the secret into Remy.",
+            "Determine whether the consumer can use an AWS role, workload identity, federation, or another temporary-credential mechanism instead.",
+            "Migrate and test each consumer. If a long-lived replacement remains necessary, distribute it only through the approved secret-management path.",
+            "Deactivate the old key, monitor for failures for an owner-approved period, and delete it only after dependencies are confirmed migrated.",
+            "Review the IAM user's remaining permissions and credentials, then rerun the relevant Prowler check.",
+            f"AWS access-key guidance: {_AWS_ACCESS_KEYS}",
+        ],
+    )
+
+
+def _iam_unused_console_access(_observation: Observation) -> Recommendation:
+    return Recommendation(
+        status="manual_action",
+        what=(
+            "Prowler observed an IAM user with console access whose recorded password use is older "
+            "than the configured threshold. Prowler 5.42.0 defaults that threshold to 45 days."
+        ),
+        why=(
+            "An unused console password remains a long-lived sign-in path. Inactivity is a review "
+            "signal, not proof that the identity is obsolete or that access can be removed safely."
+        ),
+        change=(
+            "Confirm ownership and business need. Remove the IAM login profile when direct console "
+            "access is no longer required, or retain it only with an approved exception, MFA, and "
+            "documented lifecycle owner. Prefer federation or IAM Identity Center for workforce access."
+        ),
+        impact=(
+            "Removing the login profile prevents direct password sign-in for that IAM user but does "
+            "not revoke access keys, active sessions, or access obtained by assuming roles. An "
+            "incorrect removal can block emergency or infrequent operational access."
+        ),
+        citations=[
+            _draft_citation(
+                "45 CFR 164.308(a)(3)(ii)(B)",
+                "Workforce security — workforce clearance procedure",
+                url=_ECFR_164_308,
+            )
+        ],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "The observation does not establish the user's owner, employment state, emergency role, federation eligibility, or other credentials.",
+            "The configured inactivity threshold and AWS password-last-used data require confirmation before access removal.",
+            "A generic Terraform login-profile change is not emitted because identity ownership and the rest of the user's credential lifecycle are unknown.",
+        ],
+        steps=[
+            "Confirm the user's owner, business purpose, last activity, groups and policies, MFA state, access keys, and emergency-access designation.",
+            "Obtain the identity owner's removal or exception decision and verify that an approved alternative access path exists where needed.",
+            "Remove the login profile through the customer's identity lifecycle process, or document a time-bounded exception with MFA and review ownership.",
+            "Review other credentials and sessions separately, notify affected owners, and rerun the Prowler check.",
+        ],
+    )
+
+
+def _iam_administrative_policy(observation: Observation) -> Recommendation:
+    policy_kind = {
+        "iam_aws_attached_policy_no_administrative_privileges": "an attached AWS-managed policy",
+        "iam_customer_attached_policy_no_administrative_privileges": (
+            "an attached customer-managed policy"
+        ),
+        "iam_inline_policy_no_administrative_privileges": "an inline policy",
+    }[observation.check_id]
+    return Recommendation(
+        status="needs_context",
+        what=(
+            f"Prowler found {policy_kind} that allows both all actions and all resources. The saved "
+            "observation does not include the full policy, attachments, or effective-permission context."
+        ),
+        why=(
+            "Unrestricted administrative permission can let a compromised or misused principal alter "
+            "security controls, data, identities, and logging across the account."
+        ),
+        change=(
+            "Identify every attached principal and required job function, design a tested "
+            "least-privilege replacement, and then update or detach the broad policy in its owning "
+            "configuration. AWS-managed policies cannot be edited and require replacement."
+        ),
+        impact=(
+            "Removing broad permissions before validating replacement access can cause an outage or "
+            "lock out administrators. Identity policies also interact with resource policies, "
+            "permissions boundaries, session policies, and Organizations controls, so changing one "
+            "document does not by itself establish effective least privilege."
+        ),
+        citations=[_draft_citation("45 CFR 164.312(a)(1)", "Access control")],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "Policy JSON, attachment inventory, principal purpose, access activity, permission boundaries, SCPs, and Terraform ownership were not available to the report generator.",
+            "No replacement policy can be derived safely from the check name, policy name, or finding text alone.",
+            "The recommendation addresses an identity-policy finding and does not assert that all effective permissions have been evaluated.",
+        ],
+        steps=[
+            "Inventory every user, group, and role that receives the policy and identify the owner and required tasks for each principal.",
+            "Review CloudTrail and IAM last-accessed information with appropriate retention caveats, then draft separate least-privilege permissions where job functions differ.",
+            "Validate policy grammar and security findings with IAM Access Analyzer, simulate and test representative workflows, and preserve a reviewed emergency-access path.",
+            "Update the customer-managed or inline policy in its owning configuration, or replace and detach an AWS-managed administrator policy. Roll out in stages and monitor denied actions.",
+            "Rerun the Prowler check and review other policy layers before recording the remediation as verified.",
+            f"AWS IAM policy management reference: {_AWS_IAM_POLICY_MANAGEMENT}",
+            f"AWS IAM policy validation reference: {_AWS_IAM_POLICY_VALIDATION}",
+        ],
+    )
+
+
+def _iam_marketplace_subscribe_policy(observation: Observation) -> Recommendation:
+    policy_kind = (
+        "inline"
+        if observation.check_id == "iam_inline_policy_no_wildcard_marketplace_subscribe"
+        else "customer-managed"
+    )
+    return Recommendation(
+        status="needs_context",
+        what=(
+            f"Prowler found a {policy_kind} IAM policy allowing aws-marketplace:Subscribe with a "
+            "wildcard resource. AWS does not currently define a resource type for this action, so a "
+            "policy that grants it must use a wildcard resource."
+        ),
+        why=(
+            "Subscribe is a purchasing-capable permission. Granting it to a principal that does not "
+            "need procurement authority can allow unapproved product subscriptions and charges."
+        ),
+        change=(
+            "Remove aws-marketplace:Subscribe from principals that do not have approved purchasing "
+            "responsibility. Where the action is required, isolate it in an explicitly owned policy "
+            "and apply available approval, condition, budget, and monitoring controls; do not invent a "
+            "resource ARN for an action that lacks resource-level authorization."
+        ),
+        impact=(
+            "Removing the action can block legitimate marketplace procurement and deployment workflows. "
+            "Keeping it may be an accepted business requirement, but the wildcard resource cannot be "
+            "made narrower unless AWS adds resource-level support."
+        ),
+        citations=[
+            _draft_citation(
+                "45 CFR 164.308(a)(4)(ii)(B)",
+                "Information access management — access authorization",
+                url=_ECFR_164_308,
+            )
+        ],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "The policy document, attached principals, procurement workflow, AWS Organizations controls, and Terraform ownership were not available.",
+            "A failed check is not enough to decide that the permission is unauthorized; the responsible procurement and security owners must decide.",
+            "No resource-scoped Terraform example is emitted because the AWS service authorization reference lists no resource type for aws-marketplace:Subscribe.",
+        ],
+        steps=[
+            "Identify every principal receiving the policy and confirm whether each principal has approved marketplace purchasing responsibility.",
+            "Remove the action for principals that do not need it. For approved purchasers, isolate the permission and add the organization's applicable approval, condition, budget, and alerting controls.",
+            "Validate and test the revised policy, update it in its owning configuration, monitor denied subscription attempts, and rerun the Prowler check.",
+            f"AWS Marketplace authorization reference: {_AWS_MARKETPLACE_AUTHORIZATION}",
+        ],
+    )
+
+
+def _guardduty_high_severity(_observation: Observation) -> Recommendation:
+    return Recommendation(
+        status="manual_action",
+        what=(
+            "Prowler observed one or more high-severity GuardDuty findings associated with an "
+            "enabled regional detector."
+        ),
+        why=(
+            "A high-severity finding is a security signal requiring triage. Its presence does not "
+            "identify the root cause or establish that a compromise occurred."
+        ),
+        change=(
+            "Open each current finding in the owning account and Region, preserve relevant evidence, "
+            "validate the affected resources and activity, contain confirmed threats, remediate the "
+            "underlying cause, and archive a finding only after the response owner documents disposition."
+        ),
+        impact=(
+            "Containment can interrupt workloads, credentials, network paths, or data access. "
+            "Suppressing or archiving findings without investigation can hide continuing activity and "
+            "does not remediate the underlying condition."
+        ),
+        citations=[
+            _draft_citation(
+                "45 CFR 164.308(a)(6)(ii)",
+                "Security incident procedures — response and reporting",
+                url=_ECFR_164_308,
+            )
+        ],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "The saved observation does not include the complete GuardDuty finding, affected-resource state, evidence, or investigation history.",
+            "Severity is a prioritization input; it is not proof of malicious activity, breach, or regulatory noncompliance.",
+            "A generic infrastructure patch cannot safely substitute for incident triage and service-specific remediation.",
+        ],
+        steps=[
+            "Assign the finding to the security-response owner and retrieve the complete current finding in its account and Region.",
+            "Preserve relevant GuardDuty, CloudTrail, network, identity, and workload evidence under the customer's response procedures.",
+            "Validate the activity, scope affected resources and credentials, and follow the finding-type remediation guidance with service owners.",
+            "Contain and eradicate confirmed threats with explicit change authority, verify recovery and monitoring, and document false-positive or accepted-risk decisions.",
+            "Archive or suppress only under the approved disposition process, then rerun the Prowler check and confirm no qualifying active findings remain.",
+            f"AWS GuardDuty finding reference: {_AWS_GUARDDUTY_FINDINGS}",
+        ],
+    )
+
+
+def _ec2_instance_age(_observation: Observation) -> Recommendation:
+    return Recommendation(
+        status="needs_context",
+        what=(
+            "Prowler observed a running EC2 instance older than the configured age threshold. "
+            "Prowler 5.42.0 defaults the threshold to 180 days."
+        ),
+        why=(
+            "Instance age is a maintenance signal. A long-running instance can miss immutable-image "
+            "refreshes or lifecycle controls, but age alone does not prove that its operating system, "
+            "packages, agent state, or configuration is vulnerable."
+        ),
+        change=(
+            "Identify the workload owner and maintenance model, verify patch and configuration state, "
+            "and choose an owner-approved response: replace from a current image, patch in place, "
+            "retire the instance, or document an exception with compensating monitoring."
+        ),
+        impact=(
+            "Stopping, terminating, patching, or replacing an instance can cause downtime, data loss, "
+            "address changes, capacity changes, or application incompatibility. A generic Terraform "
+            "replacement could destroy instance-local state and is not emitted."
+        ),
+        citations=[
+            _draft_citation(
+                "45 CFR 164.308(a)(1)(ii)(B)",
+                "Risk management",
+                url=_ECFR_164_308,
+            )
+        ],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "The configured age threshold, workload criticality, launch template, image pipeline, patch state, storage layout, and recovery readiness were not available.",
+            "The observation does not establish whether the instance is immutable, stateful, clustered, autoscaled, or already under an approved maintenance exception.",
+            "No stop, terminate, replacement, or in-place patch action is authorized by this report.",
+        ],
+        steps=[
+            "Confirm the scan threshold and identify the workload, owner, environment, dependencies, data location, recovery point, and maintenance window.",
+            "Review current patch, vulnerability, configuration-management, backup, launch-template, and image provenance evidence.",
+            "Choose and test replacement, patching, retirement, or exception handling with the service owner; preserve data and rollback capability.",
+            "Execute through the customer's change process, validate service health and monitoring, and rerun the relevant Prowler checks.",
+            f"AWS lifecycle and patching reference: {_AWS_EC2_INSTANCE_LIFECYCLE}",
+        ],
+    )
+
+
+def _kms_rotation(_observation: Observation) -> Recommendation:
+    return Recommendation(
+        status="needs_context",
+        what=(
+            "Prowler observed an enabled, customer-managed symmetric KMS key with automatic key "
+            "rotation disabled."
+        ),
+        why=(
+            "Automatic rotation periodically replaces the backing cryptographic material while "
+            "preserving the key ID, ARN, aliases, policies, and ability to decrypt older ciphertext."
+        ),
+        change=(
+            "Enable automatic rotation for the existing key after confirming its origin, key type, "
+            "multi-Region role, ownership, and approved rotation period. If the key is already managed "
+            "by Terraform, update its owning aws_kms_key resource rather than declaring a second key."
+        ),
+        impact=(
+            "Supported automatic rotation is designed not to interrupt cryptographic operations, but "
+            "the setting is shared for related multi-Region keys and is changed on the primary. "
+            "Imported material, asymmetric keys, HMAC keys, and custom key stores require different "
+            "rotation procedures. Taking ownership of an existing KMS key policy can cause lockout."
+        ),
+        citations=[_draft_citation("45 CFR 164.312(a)(2)(iv)", "Encryption and decryption")],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "The report has not verified key origin, multi-Region primary or replica role, policy ownership, aliases, grants, application dependencies, or current Terraform state.",
+            "No complete aws_kms_key block is emitted because safely importing the key requires ownership of its policy and lifecycle settings, not only rotation.",
+            "The Prowler finding does not choose a custom rotation period or a manual-rotation procedure for unsupported key types.",
+        ],
+        steps=[
+            "Confirm the key ARN, Region, enabled state, origin, key spec, multi-Region role, owner, aliases, grants, policy, and dependent services.",
+            "Select the approved rotation period and confirm that automatic rotation is supported; for multi-Region keys, make the change on the primary.",
+            "If Terraform already manages the key, set enable_key_rotation and any approved rotation period there. Otherwise use the owning KMS process or import only after full policy and lifecycle review.",
+            "Validate authorization, apply through the customer's process, verify rotation status and next rotation date, and rerun the Prowler check.",
+            f"AWS KMS rotation reference: {_AWS_KMS_ROTATION}",
+        ],
+    )
+
+
+_ENCLAVE_POLICY_CHECKS = {
+    "kms_key_enclave_attestation_bypassable_path",
+    "kms_key_enclave_attestation_not_enforced",
+    "kms_key_enclave_attestation_pcr_mismatch",
+}
+
+
+def _kms_enclave_attestation(observation: Observation) -> Recommendation:
+    runtime_check = observation.check_id not in _ENCLAVE_POLICY_CHECKS
+    what_by_check = {
+        "kms_key_enclave_attestation_bypassable_path": (
+            "Prowler found a sensitive KMS allow path that can be used without a restrictive "
+            "recipient-attestation condition and is not neutralized by a matching deny."
+        ),
+        "kms_key_enclave_attestation_not_enforced": (
+            "Prowler found a sensitive allow statement on an enclave-designated KMS key without a "
+            "kms:RecipientAttestation condition."
+        ),
+        "kms_key_enclave_attestation_pcr_mismatch": (
+            "Prowler found a KMS key-policy attestation measurement outside the operator-supplied "
+            "golden PCR values."
+        ),
+        "kms_key_enclave_attestation_unknown_image": (
+            "Prowler found a recent non-debug KMS request whose enclave attestation measurements are "
+            "not present in the configured golden image registry."
+        ),
+        "kms_key_enclave_debug_attestation_detected": (
+            "Prowler found a recent sensitive KMS request with zeroed PCR0, PCR1, and PCR2 values, "
+            "which its check interprets as Nitro Enclave debug mode."
+        ),
+    }
+    return Recommendation(
+        status="manual_action" if runtime_check else "needs_context",
+        what=what_by_check[observation.check_id],
+        why=(
+            "Nitro Enclave KMS authorization depends on signed attestation measurements matching "
+            "trusted policy conditions. Missing, bypassable, stale, unknown, or debug measurements can "
+            "allow sensitive operations outside the intended production enclave identity."
+        ),
+        change=(
+            "Treat runtime unknown-image or debug events as security signals requiring evidence "
+            "preservation and workload investigation. For policy findings, reconcile trusted build "
+            "measurements, principals, sensitive actions, IAM policies, grants, allow statements, and "
+            "explicit deny coverage before updating the complete owning KMS policy."
+        ),
+        impact=(
+            "An incorrect attestation value or policy condition can block every legitimate enclave "
+            "decrypt or data-key request. Relaxing conditions can expose plaintext or data keys outside "
+            "the intended enclave. Replacing a policy without preserving administration paths can make "
+            "the KMS key unmanageable."
+        ),
+        citations=[_draft_citation("45 CFR 164.312(a)(1)", "Access control")],
+        terraform=None,
+        filename=None,
+        assumptions=[
+            "The report does not retain full KMS policies, IAM policies, grants, CloudTrail events, attestation documents, build provenance, or the customer's golden PCR registry.",
+            "Prowler identifies enclave keys through its configured tags or descriptive markers and relies on operator-supplied audit configuration for golden measurements and runtime coverage.",
+            "No policy JSON or PCR value is generated because trusted measurements must come from the customer's audited enclave build pipeline.",
+        ],
+        steps=[
+            "Assign the finding to the KMS, enclave-platform, workload, and security owners; retrieve the current key policy, grants, relevant IAM policies, audit configuration, and retained CloudTrail evidence.",
+            "Verify the enclave image and signing/build provenance, independently derive expected measurements, and compare them with the approved golden registry and observed attestation values.",
+            "For a runtime finding, contain unapproved or debug workloads and rotate exposed application secrets or data keys when the investigation determines exposure is possible.",
+            "For a policy finding, model every sensitive authorization path and preserve a separate administrative path that cannot perform sensitive data operations; test the revised policy in a nonproduction key.",
+            "Deploy through the owning configuration with staged verification, confirm legitimate enclave operations and denied bypasses, then rerun all applicable enclave checks with complete regional event coverage.",
+            f"AWS KMS Nitro Enclave attestation reference: {_AWS_NITRO_KMS_ATTESTATION}",
         ],
     )
 
@@ -716,11 +1273,98 @@ def _guardduty_enabled(observation: Observation) -> Recommendation:
     )
 
 
+def _iam_password_policy(_observation: Observation) -> Recommendation:
+    terraform = (
+        "# Suggested Terraform — review and adapt before applying.\n"
+        + 'variable "allow_users_to_change_password" {\n'
+        + '  description = "Whether IAM users may change their own console password"\n'
+        + "  type        = bool\n"
+        + "}\n\n"
+        + 'variable "hard_expiry" {\n'
+        + '  description = "Whether expired passwords require an administrator reset"\n'
+        + "  type        = bool\n"
+        + "}\n\n"
+        + 'variable "max_password_age" {\n'
+        + '  description = "Approved password lifetime in days; use 0 to disable expiration"\n'
+        + "  type        = number\n"
+        + "}\n\n"
+        + 'resource "aws_iam_account_password_policy" "recommended" {\n'
+        + "  minimum_password_length        = 14\n"
+        + "  password_reuse_prevention      = 24\n"
+        + "  require_lowercase_characters   = true\n"
+        + "  require_numbers                = true\n"
+        + "  require_symbols                = true\n"
+        + "  require_uppercase_characters   = true\n"
+        + "  allow_users_to_change_password = var.allow_users_to_change_password\n"
+        + "  hard_expiry                    = var.hard_expiry\n"
+        + "  max_password_age               = var.max_password_age\n"
+        + "}\n"
+    )
+    return Recommendation(
+        status="needs_context",
+        what=(
+            "One of the six reviewed IAM account password-policy checks failed. The account's "
+            "custom policy does not meet the complete reviewed baseline for length, reuse, and "
+            "lowercase, uppercase, number, and symbol requirements."
+        ),
+        why=(
+            "A stronger account policy improves passwords chosen for IAM users who sign in to the "
+            "AWS console. It does not govern the root user, access keys, IAM Identity Center, or "
+            "federated identities, and it does not replace MFA."
+        ),
+        change=(
+            "Manage the account's single IAM password policy as one resource. The suggested baseline "
+            "sets all six reviewed controls together; supply explicit decisions for password "
+            "expiration, hard expiry, and users changing their own passwords before planning."
+        ),
+        impact=(
+            "Most complexity changes apply when IAM users next change passwords and do not force "
+            "existing passwords to change. A nonzero maximum age applies immediately and can expire "
+            "older passwords. Hard expiry can require administrator resets. Terraform takes ownership "
+            "of the account's only custom password policy, so parallel snippets must not be applied."
+        ),
+        citations=[
+            _draft_citation(
+                "45 CFR 164.308(a)(5)(ii)(D)",
+                "Security awareness and training — password management",
+                url=_ECFR_164_308,
+            )
+        ],
+        terraform=terraform,
+        filename="iam_account_password_policy.tf",
+        assumptions=[
+            "The six complexity values are a combined Prowler 5.42.0 check baseline, not a claim that HIPAA prescribes these exact values.",
+            "The scan does not supply approved values for password expiration, hard expiry, or self-service password changes, so those inputs have no defaults.",
+            "Existing policy ownership, IAM-user population, break-glass procedures, federation, IAM Identity Center, and Terraform state were not inferred.",
+        ],
+        steps=[
+            "Inventory IAM users with console passwords and confirm whether workforce access should instead use federation or IAM Identity Center.",
+            "Review the current account policy and decide max_password_age, hard_expiry, and allow_users_to_change_password with the identity and support owners.",
+            "Use one Terraform resource for all password-policy findings in the account. Import the existing singleton policy only after confirming the workspace should own every setting.",
+            "Run terraform plan and review immediate expiration and support effects before applying through the customer's process; then rerun all six Prowler password-policy checks.",
+            "Require MFA separately and verify that recovery and administrator-reset procedures remain workable.",
+            f"AWS account password-policy reference: {_AWS_IAM_PASSWORD_POLICY}",
+            f"Terraform resource reference: {_TF_IAM_PASSWORD_POLICY}",
+        ],
+    )
+
+
 _CATALOG: dict[str, Callable[[Observation], Recommendation]] = {
     "s3_bucket_level_public_access_block": _s3_bucket_public_access,
     "s3_account_level_public_access_blocks": _s3_account_public_access,
     "cloudtrail_multi_region_enabled": _cloudtrail_multi_region,
     "iam_root_mfa_enabled": _root_mfa,
+    "iam_no_root_access_key": _root_access_key,
+    "iam_root_hardware_mfa_enabled": _root_hardware_mfa,
+    "iam_user_mfa_enabled_console_access": _iam_user_mfa,
+    "iam_rotate_access_key_90_days": _iam_access_key_lifecycle,
+    "iam_user_accesskey_unused": _iam_access_key_lifecycle,
+    "iam_user_console_access_unused": _iam_unused_console_access,
+    "iam_aws_attached_policy_no_administrative_privileges": _iam_administrative_policy,
+    "iam_customer_attached_policy_no_administrative_privileges": _iam_administrative_policy,
+    "iam_inline_policy_no_administrative_privileges": _iam_administrative_policy,
+    "iam_inline_policy_no_wildcard_marketplace_subscribe": _iam_marketplace_subscribe_policy,
+    "iam_policy_no_wildcard_marketplace_subscribe": _iam_marketplace_subscribe_policy,
     "accessanalyzer_enabled": _access_analyzer,
     "account_maintain_different_contact_details_to_security_billing_and_operations": (
         _alternate_contacts
@@ -728,6 +1372,26 @@ _CATALOG: dict[str, Callable[[Observation], Recommendation]] = {
     "ec2_ebs_default_encryption": _ebs_default_encryption,
     "s3_bucket_object_versioning": _s3_object_versioning,
     "guardduty_is_enabled": _guardduty_enabled,
+    "guardduty_no_high_severity_findings": _guardduty_high_severity,
+    "ec2_instance_older_than_specific_days": _ec2_instance_age,
+    "kms_cmk_rotation_enabled": _kms_rotation,
+    "kms_key_enclave_attestation_bypassable_path": _kms_enclave_attestation,
+    "kms_key_enclave_attestation_not_enforced": _kms_enclave_attestation,
+    "kms_key_enclave_attestation_pcr_mismatch": _kms_enclave_attestation,
+    "kms_key_enclave_attestation_unknown_image": _kms_enclave_attestation,
+    "kms_key_enclave_debug_attestation_detected": _kms_enclave_attestation,
+    "iam_password_policy_lowercase": _iam_password_policy,
+    "iam_password_policy_minimum_length_14": _iam_password_policy,
+    "iam_password_policy_number": _iam_password_policy,
+    "iam_password_policy_reuse_24": _iam_password_policy,
+    "iam_password_policy_symbol": _iam_password_policy,
+    "iam_password_policy_uppercase": _iam_password_policy,
+    **S3_BUILDERS,
+    **CLOUDTRAIL_BUILDERS,
+    **DYNAMODB_BUILDERS,
+    **EC2_BUILDERS,
+    **EFS_BUILDERS,
+    **RDS_BUILDERS,
 }
 
 

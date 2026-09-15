@@ -22,11 +22,11 @@ def test_unsupported_framework_finding_keeps_mapping_and_no_invented_code() -> N
 
     rows = json.loads(Path("remy/data/prowler-aws-example.json").read_bytes())
     row = rows[0]
-    row["metadata"]["event_code"] = "rds_instance_storage_encrypted"
+    row["metadata"]["event_code"] = "redshift_cluster_public_access"
     row["status_code"] = "FAIL"
     report = compose_report(json.dumps([row]).encode(), uuid4(), "test.json")
     recommendation = report.items[0].recommendation
     assert recommendation.status == "unsupported"
     assert recommendation.terraform is None
-    assert recommendation.citations == citations_for("rds_instance_storage_encrypted")
+    assert recommendation.citations == citations_for("redshift_cluster_public_access")
     assert any("1 of 95" in warning for warning in report.warnings)

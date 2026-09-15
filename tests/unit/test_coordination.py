@@ -66,6 +66,21 @@ def test_regional_singletons_flag_multiple_suggestions_in_same_region():
     assert len(result.shared_changes) == 1
 
 
+def test_password_policy_findings_share_one_account_setting():
+    result = report(
+        row("iam_password_policy_lowercase", "account-password-policy", name="account"),
+        row("iam_password_policy_reuse_24", "account-password-policy", name="account"),
+        row("iam_password_policy_symbol", "account-password-policy", name="account"),
+    )
+
+    assert len(result.items) == 3
+    assert len(result.shared_changes) == 1
+    shared = result.shared_changes[0]
+    assert shared.target.setting == "IAM account password policy"
+    assert shared.target.region is None
+    assert set(shared.item_ids) == {item.item_id for item in result.items}
+
+
 def test_distinct_settings_on_same_bucket_do_not_overlap():
     result = report(
         row("s3_bucket_level_public_access_block", "arn:aws:s3:::example-bucket"),

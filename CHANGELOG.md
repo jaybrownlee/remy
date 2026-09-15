@@ -1,0 +1,17 @@
+# Changelog
+
+## Unreleased
+
+- Added reviewable Terraform guidance for all six IAM account password-policy checks in the pinned HIPAA framework.
+- Added manual, secret-safe guidance for root access keys, root hardware MFA, and MFA for console-enabled IAM users.
+- Added dependency-aware guidance for stale IAM access keys, unused console access, administrative policies, and AWS Marketplace subscription permissions.
+- Added incident- and architecture-aware guidance for GuardDuty findings, aging EC2 instances, KMS rotation, and Nitro Enclave attestation findings.
+- Added S3 default-encryption and server-logging Terraform guidance plus policy-safe public-access and secure-transport review paths.
+- Moved scanner identifier validation into a shared recommendation module for service-specific catalogs.
+- Added complete-trail review guidance for Bedrock events, CloudWatch delivery, KMS encryption, log validation, and S3 object data events.
+- Added migration-aware RDS guidance for backups, log exports, Multi-AZ, public network paths, storage encryption, and public snapshots without generating incomplete stateful resources.
+- Added investigation- and migration-aware guidance for public EBS snapshots, unencrypted EBS volumes, EC2 public IPs, and Systems Manager registration.
+- Added EFS encrypted-replacement planning and backup-policy guidance with restore validation and no destructive source actions.
+- Added DAX replacement, DynamoDB key-selection, and point-in-time recovery guidance, including the pinned check's managed-key detection limitation.
+- Grouped password-policy findings that target the same AWS account so customers are warned to use one owning Terraform configuration.
+- Increased framework recommendation coverage from 6 to 57 of 95 checks; 48 generated Terraform examples pass the pinned validation harness.

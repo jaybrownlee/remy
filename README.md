@@ -19,7 +19,7 @@ Reports persist in `.remy/reports.db`. Set `REMY_DATABASE_URL` to use another SQ
 
 - Strict saved-scan parsing, stable organization/account/check/resource item IDs, provisional prioritization, and immutable report snapshots through the storage API.
 - Every FAIL is represented, including unsupported checks. PASS and MANUAL counts are shown separately.
-- Nine recommendation handlers (six of the 95 pinned HIPAA framework checks); missing context is explicit. Unknown checks retain their findings without invented Terraform.
+- Sixty recommendation check mappings (57 of the 95 pinned HIPAA framework checks); missing context is explicit. Unknown checks retain their findings without invented Terraform.
 - Shared-setting warnings link related findings while preserving every item and Terraform suggestion. Older snapshots are not retroactively assessed.
 - Server-rendered report history and detail pages; PDF, JSON, and ZIP downloads containing suggestions and a hash manifest.
 - Loopback-only HTTP boundary, same-origin form protection, bounded uploads, escaped report content, and organization-scoped storage queries.
