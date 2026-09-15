@@ -4,8 +4,10 @@
 <section class="shell workspace-section">
   <h1>Sign in to Remy</h1>
   {% if sent %}
-  <p>If this address has access, a sign-in link has been delivered. Open it in this browser within 15 minutes.</p>
+  <p>If this address has access, look for a sign-in link. Open it in this browser within 15 minutes. If none arrives, request a new link in a few minutes.</p>
+  {% if local_delivery %}
   <p>Local development delivery is saved in the private server mailbox.</p>
+  {% endif %}
   {% elif confirm %}
   <p>Continue to sign in. This link can be used once.</p>
   <form action="/login/confirm" method="post">

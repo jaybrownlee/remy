@@ -15,6 +15,8 @@ make dev
 
 Open http://127.0.0.1:8000 and request a sign-in link for the provisioned address. Delivery is local-only: open the newest `.remy/mail/*.txt` file and paste its link into the same browser within 15 minutes. Confirm sign-in, then select **Generate sample report** or import a Prowler AWS JSON-OCSF array (up to 10 MiB and 5,000 resource observations). The bundled public Prowler example contains placeholders; it is not a live or complete HIPAA scan.
 
+Authenticated SMTP delivery is also available with verified TLS, timeouts, and failed-link revocation. See [email setup and acceptance](docs/runbooks/email.md). It stays off until you explicitly select SMTP and provide credentials; no external provider has been activated.
+
 To add another person to an existing organization, run the provisioning command with `--org-id <UUID> --role member`, using the organization UUID printed by the first command. Provisioning requires trusted operator access to the database; there is no public signup or membership-management page. An email may belong to multiple organizations; use **Switch organization** in the header. Switching rotates the session and form token without extending the original expiry. Reload forms opened before switching.
 
 Use the same hostname when requesting and opening links: cookies distinguish `localhost` from `127.0.0.1`. Set `REMY_PUBLIC_URL` if using another loopback origin. HTTPS origins use Secure cookies; plain HTTP is allowed only for this local checkpoint. `make dev` disables access logging, and confirmation queries are removed from the ASGI scope before responses. Do not enable request-body logging or proxy logs containing sign-in URLs.
@@ -36,7 +38,7 @@ Reports persist in `.remy/reports.db`. Set `REMY_DATABASE_URL` consistently for 
 - Tenant-scoped history, reports, imports, and exports. Membership is checked on every authenticated request. Login, logout, provisioning, and downloads produce audit records protected against UPDATE/DELETE by database triggers.
 - Loopback-only HTTP boundary, same-origin form protection, bounded uploads, and escaped report content.
 
-This is a local prototype with development-only link delivery, not a customer-facing service. Production email and production security boundaries remain unfinished. Database-backed tests pass on SQLite and PostgreSQL 16.15. Both membership roles currently have the same report permissions; membership administration remains operator-only. Raw uploaded files are not retained, but selected metadata and finding descriptions are persisted; heuristic redaction is not a comprehensive secret scanner.
+This is a local prototype, not a customer-facing service. Provider-specific email acceptance and production security boundaries remain unfinished. Database-backed tests pass on SQLite and PostgreSQL 16.15. Both membership roles currently have the same report permissions; membership administration remains operator-only. Raw uploaded files are not retained, but selected metadata and finding descriptions are persisted; heuristic redaction is not a comprehensive secret scanner.
 
 Run `make cleanup-auth` periodically to delete up to 1,000 expired links, sessions, and rate-limit buckets per table. Repeat until counts reach zero for a backlog. Active credentials, current rate limits, reports, memberships, and audit history are retained. No background schedule is installed automatically; local mailbox files are not deleted by this command.
 
@@ -58,7 +60,7 @@ Tests cover normalization, malformed and duplicate records, stable identities, u
 ## Next milestones
 
 1. Coverage handlers now exist for every pinned framework check. Remaining recommendation work includes customer-specific Terraform generation, broader dependency/conflict handling, and regulatory applicability review.
-2. Finish authentication operations: production mail delivery, membership administration, least-privilege database roles, and production security boundaries.
+2. Finish authentication operations: provider-specific email acceptance, membership administration, least-privilege database roles, and production security boundaries.
 3. Read-only AWS onboarding, pinned Prowler execution, queued scans, completeness tracking, and explicit PASS-based finding updates.
 4. Operational readiness, customer acceptance tests, and deployment.
 

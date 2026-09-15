@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added authenticated, certificate-verified SMTP delivery with STARTTLS/implicit TLS, socket timeouts, generic failure logging, and failed-link revocation. Tested an actual local TLS/SMTP message exchange; external provider activation still requires credentials and sender verification.
+- Allowed top-level email-link navigation with a SameSite=Lax login nonce while keeping session cookies Strict and confirmation POSTs CSRF-protected.
 - Added CSRF-protected organization switching with membership checks, atomic session rotation, unchanged expiry, and audit attribution. Added bounded expired-authentication cleanup and an indexed retention migration; active sessions and audit history are preserved.
 - Verified database-backed tests on a temporary native PostgreSQL 16.15 instance, including prototype adoption, tenant isolation, concurrent authentication, and audit protections. Pinned CI to the verified PostgreSQL release.
 - Added explicit Alembic migrations with a frozen baseline that preserves compatible prototype data and rejects detected schema drift. Application startup now checks schema version without creating tables or replacing triggers.

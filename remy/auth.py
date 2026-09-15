@@ -246,6 +246,10 @@ class AuthStore:
             self._record(conn, Identity(str(user_id), UUID(org_id), "", "", "", ""), "login")
             return value
 
+    def revoke_link(self, token: str) -> None:
+        with self.engine.begin() as conn:
+            conn.execute(delete(links).where(links.c.digest == digest(token)))
+
     def identify(self, token: str, now: int | None = None) -> Identity | None:
         now = int(time.time()) if now is None else now
         if not token or len(token) > 100:

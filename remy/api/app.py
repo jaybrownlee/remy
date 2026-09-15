@@ -1,5 +1,6 @@
 """Loopback-only saved-scan application with local magic-link authentication."""
 
+import logging
 import os
 import secrets
 from collections.abc import Callable
@@ -11,6 +12,7 @@ from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -18,7 +20,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from remy.auth import AuthStore, Identity
 from remy.db.store import Store
 from remy.ingest.ocsf import MAX_BYTES, ImportError
-from remy.mail import LocalMailbox
+from remy.mail import DeliveryError, LocalMailbox, configured_delivery
 from remy.reports.compose import compose_report
 from remy.reports.export import json_export, pdf_export, terraform_export
 from remy.reports.schema import Report
@@ -119,7 +121,7 @@ def create_app(
         database_url = f"sqlite:///{directory / 'reports.db'}"
     store = Store(database_url)
     auth = AuthStore(database_url)
-    deliver = deliver or LocalMailbox(Path(os.environ.get("REMY_DATA_DIR", ".remy")) / "mail")
+    deliver = deliver or configured_delivery()
     app = FastAPI(title="Remy local prototype", docs_url=None, redoc_url=None)
     app.state.store = store
     app.state.auth = auth
@@ -190,7 +192,9 @@ def create_app(
             max_age=900,
             httponly=True,
             secure=secure_cookie,
-            samesite="strict",
+            # Allow the non-consuming top-level GET from an email client.
+            # POST login still requires the browser-bound nonce and same-origin checks.
+            samesite="lax",
         )
         return response
 
@@ -205,12 +209,17 @@ def create_app(
         if token:
             try:
                 assert deliver is not None
-                deliver(email.strip().lower(), f"{origin_url}/login/confirm?token={token}")
-            except OSError:
-                # Never include the token, recipient, or transport exception in the response.
-                pass
+                await run_in_threadpool(
+                    deliver, email.strip().lower(), f"{origin_url}/login/confirm?token={token}"
+                )
+            except (OSError, DeliveryError):
+                auth.revoke_link(token)
+                # No recipient, URL, exception detail, or traceback in operational logs.
+                logging.getLogger("remy.mail").warning("magic_link_delivery_failed")
         return templates.TemplateResponse(
-            request=request, name="login.html", context={"sent": True}
+            request=request,
+            name="login.html",
+            context={"sent": True, "local_delivery": isinstance(deliver, LocalMailbox)},
         )
 
     @app.get("/login/confirm", response_class=HTMLResponse)
