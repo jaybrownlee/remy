@@ -2,7 +2,7 @@
 
 Source: [Prowler 5.42.0 framework](https://github.com/prowler-cloud/prowler/blob/73ae2eb1947a0912a05010a296f469bfa55ebe76/prowler/compliance/aws/hipaa_aws.json).
 
-57 of 95 framework checks have guidance handlers. This counts implementation coverage, not validated fixes or compliance.
+59 of 95 framework checks have guidance handlers. This counts implementation coverage, not validated fixes or compliance.
 
 All mappings are upstream Prowler mappings requiring applicability review. Unsupported findings remain visible in reports.
 
@@ -78,8 +78,8 @@ All mappings are upstream Prowler mappings requiring applicability review. Unsup
 | kms_key_enclave_attestation_pcr_mismatch | Available; review required | 45 CFR 164.312(c)(1) |
 | kms_key_enclave_attestation_unknown_image | Available; review required | 45 CFR 164.312(c)(2) |
 | kms_key_enclave_debug_attestation_detected | Available; review required | 45 CFR 164.308(a)(1)(ii)(D); 45 CFR 164.312(b) |
-| opensearch_service_domains_encryption_at_rest_enabled | Missing | 45 CFR 164.308(a)(1)(ii)(B); 45 CFR 164.308(a)(4)(ii)(A); 45 CFR 164.312(a)(2)(iv); 45 CFR 164.312(e)(2)(ii) |
-| opensearch_service_domains_node_to_node_encryption_enabled | Missing | 45 CFR 164.308(a)(4)(ii)(A); 45 CFR 164.312(e)(1) |
+| opensearch_service_domains_encryption_at_rest_enabled | Available; review required | 45 CFR 164.308(a)(1)(ii)(B); 45 CFR 164.308(a)(4)(ii)(A); 45 CFR 164.312(a)(2)(iv); 45 CFR 164.312(e)(2)(ii) |
+| opensearch_service_domains_node_to_node_encryption_enabled | Available; review required | 45 CFR 164.308(a)(4)(ii)(A); 45 CFR 164.312(e)(1) |
 | rds_instance_backup_enabled | Available; review required | 45 CFR 164.308(a)(1)(ii)(B); 45 CFR 164.308(a)(4)(ii)(A); 45 CFR 164.308(a)(7)(i); 45 CFR 164.308(a)(7)(ii)(A); 45 CFR 164.308(a)(7)(ii)(B); 45 CFR 164.308(a)(7)(ii)(C); 45 CFR 164.312(a)(2)(ii) |
 | rds_instance_integration_cloudwatch_logs | Available; review required | 45 CFR 164.308(a)(4)(ii)(A); 45 CFR 164.312(b) |
 | rds_instance_multi_az | Available; review required | 45 CFR 164.308(a)(1)(ii)(B); 45 CFR 164.308(a)(7)(i); 45 CFR 164.308(a)(7)(ii)(A); 45 CFR 164.308(a)(7)(ii)(B); 45 CFR 164.308(a)(7)(ii)(C) |

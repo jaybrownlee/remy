@@ -7,6 +7,7 @@ import re
 from collections import defaultdict
 
 from remy.recommendations.identifiers import bucket_name, trail_name
+from remy.recommendations.opensearch import OPENSEARCH_BUILDERS
 from remy.reports.schema import ChangeTarget, ReportItem, SharedChange
 
 _ACCOUNT_SETTINGS = {
@@ -36,10 +37,26 @@ _BUCKET_SETTINGS = {
 
 def target_for(item: ReportItem) -> ChangeTarget | None:
     observation = item.observation
-    if not item.recommendation.terraform or not re.fullmatch(r"\d{12}", observation.account_id):
+    if not re.fullmatch(r"\d{12}", observation.account_id):
         return None
     check = observation.check_id
     account = observation.account_id
+    if check in OPENSEARCH_BUILDERS:
+        domain = re.fullmatch(
+            r"arn:(?:aws|aws-cn|aws-us-gov):es:([a-z]{2}(?:-[a-z]+)+-\d+):"
+            r"([0-9]{12}):domain/([a-z][a-z0-9-]{2,27})",
+            observation.resource_uid,
+        )
+        if domain and domain[2] == account and domain[1] == observation.region:
+            return ChangeTarget(
+                account_id=account,
+                region=domain[1],
+                setting="OpenSearch domain configuration",
+                resource=domain[3],
+            )
+        return None
+    if not item.recommendation.terraform:
+        return None
     if check in _ACCOUNT_SETTINGS:
         return ChangeTarget(account_id=account, setting=_ACCOUNT_SETTINGS[check], resource=account)
     if check in _BUCKET_SETTINGS:
@@ -82,7 +99,7 @@ def assess_shared_changes(items: list[ReportItem]) -> list[SharedChange]:
         item.change_target = target_for(item)
         item.coordination_notes = []
         item.related_item_ids = []
-        if not item.recommendation.terraform:
+        if not item.recommendation.terraform and item.change_target is None:
             continue
         if item.change_target is None:
             item.coordination_notes.append(

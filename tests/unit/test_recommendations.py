@@ -73,6 +73,8 @@ def test_supported_check_ids_are_the_reviewed_bounded_catalog() -> None:
         "dynamodb_accelerator_cluster_encryption_enabled",
         "dynamodb_tables_kms_cmk_encryption_enabled",
         "dynamodb_tables_pitr_enabled",
+        "opensearch_service_domains_encryption_at_rest_enabled",
+        "opensearch_service_domains_node_to_node_encryption_enabled",
         "ec2_ebs_public_snapshot",
         "ec2_ebs_volume_encryption",
         "ec2_instance_managed_by_ssm",

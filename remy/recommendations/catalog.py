@@ -25,6 +25,7 @@ from remy.recommendations.identifiers import (
 from remy.recommendations.identifiers import (
     trail_name as _trail_name,
 )
+from remy.recommendations.opensearch import OPENSEARCH_BUILDERS
 from remy.recommendations.rds import RDS_BUILDERS
 from remy.recommendations.s3 import S3_BUILDERS
 from remy.reports.schema import Citation, Observation, Recommendation
@@ -165,6 +166,7 @@ SUPPORTED_CHECK_IDS = frozenset(
         *EC2_BUILDERS,
         *EFS_BUILDERS,
         *RDS_BUILDERS,
+        *OPENSEARCH_BUILDERS,
         "iam_password_policy_lowercase",
         "iam_password_policy_minimum_length_14",
         "iam_password_policy_number",
@@ -1392,6 +1394,7 @@ _CATALOG: dict[str, Callable[[Observation], Recommendation]] = {
     **EC2_BUILDERS,
     **EFS_BUILDERS,
     **RDS_BUILDERS,
+    **OPENSEARCH_BUILDERS,
 }
 
 
