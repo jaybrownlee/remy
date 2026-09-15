@@ -9,7 +9,7 @@ from alembic.runtime.migration import MigrationContext
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
-HEAD = "0001_baseline"
+HEAD = "0002_auth_retention"
 
 
 def upgrade(engine: Engine) -> None:

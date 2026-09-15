@@ -22,6 +22,7 @@
         {% if request.state.identity %}
         <div class="shell">
           {{ request.state.identity.organization }} · {{ request.state.identity.email }}
+          <a href="/organizations">Switch organization</a>
           <form action="/logout" method="post">
             <input type="hidden" name="csrf" value="{{ request.state.identity.csrf }}">
             <button type="submit">Sign out</button>

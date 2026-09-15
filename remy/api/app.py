@@ -141,6 +141,7 @@ def create_app(
             request.url.path == "/"
             or request.url.path.startswith("/reports")
             or request.url.path == "/logout"
+            or request.url.path.startswith("/organizations")
         )
         if protected and not demo_mode and identity is None:
             response = (
@@ -259,6 +260,41 @@ def create_app(
             auth.logout(request.cookies.get("remy_session", ""), identity)
         response = RedirectResponse("/login", status_code=303)
         response.delete_cookie("remy_session")
+        return response
+
+    @app.get("/organizations", response_class=HTMLResponse)
+    def choose_organization(request: Request) -> Response:
+        if demo_mode:
+            raise HTTPException(404)
+        return templates.TemplateResponse(
+            request=request,
+            name="organizations.html",
+            context={"organizations": auth.organization_choices(request.state.identity)},
+        )
+
+    @app.post("/organizations/switch")
+    async def switch_organization(request: Request) -> Response:
+        if demo_mode:
+            raise HTTPException(404)
+        await check_csrf(request, request.state.identity.csrf)
+        form = await request.form()
+        try:
+            target = UUID(str(form.get("org_id", "")))
+        except ValueError:
+            raise HTTPException(404, "Organization not available.") from None
+        changed = auth.switch(request.cookies.get("remy_session", ""), target)
+        if changed is None:
+            raise HTTPException(404, "Organization not available.")
+        value, remaining = changed
+        response = RedirectResponse("/", status_code=303)
+        response.set_cookie(
+            "remy_session",
+            value,
+            max_age=remaining,
+            httponly=True,
+            secure=secure_cookie,
+            samesite="strict",
+        )
         return response
 
     def home(request: Request, error: str | None = None, status: int = 200) -> HTMLResponse:

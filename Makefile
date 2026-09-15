@@ -1,4 +1,4 @@
-.PHONY: dev fmt lint migrate test test-terraform coverage
+.PHONY: dev fmt lint migrate test test-terraform coverage cleanup-auth
 
 REMY_DATABASE_URL ?= sqlite:///.remy/reports.db
 export REMY_DATABASE_URL
@@ -22,6 +22,9 @@ test:
 migrate:
 	mkdir -p .remy
 	uv run python -m remy.db.migrate
+
+cleanup-auth:
+	uv run python -m scripts.cleanup_auth
 
 test-terraform:
 	uv run python -m scripts.validate_terraform --terraform "$(TERRAFORM)"

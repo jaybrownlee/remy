@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Organizations · Remy{% endblock %}
+{% block content %}
+<section class="shell workspace-section">
+  <h1>Choose organization</h1>
+  <form action="/organizations/switch" method="post">
+    <input type="hidden" name="csrf" value="{{ request.state.identity.csrf }}">
+    <label for="org_id">Organization</label>
+    <select name="org_id" id="org_id">
+      {% for id, name in organizations %}
+      <option value="{{ id }}" {% if id == request.state.identity.org_id|string %}selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Switch organization</button>
+  </form>
+  <p>Switching does not extend your session. Forms opened before switching must be reloaded.</p>
+</section>
+{% endblock %}

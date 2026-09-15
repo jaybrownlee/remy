@@ -55,7 +55,7 @@ links = Table(
     Column("digest", String(64), primary_key=True),
     Column("user_id", ForeignKey("auth_users.id"), nullable=False),
     Column("browser_digest", String(64), nullable=False),
-    Column("expires", Integer, nullable=False),
+    Column("expires", Integer, nullable=False, index=True),
 )
 sessions = Table(
     "auth_sessions",
@@ -64,13 +64,14 @@ sessions = Table(
     Column("user_id", ForeignKey("auth_users.id"), nullable=False),
     Column("org_id", ForeignKey("auth_organizations.id"), nullable=False),
     Column("csrf", String(64), nullable=False),
-    Column("expires", Integer, nullable=False),
+    Column("expires", Integer, nullable=False, index=True),
 )
 limits = Table(
     "auth_rate_limits",
     metadata,
     Column("key", String(100), primary_key=True),
     Column("count", Integer, nullable=False),
+    Column("expires", Integer, nullable=False, index=True),
 )
 audit = Table(
     "auth_audit",
@@ -163,7 +164,9 @@ class AuthStore:
         key = f"{now // 3600}:{digest(key)}"
         try:
             with self.engine.begin() as conn:
-                conn.execute(insert(limits).values(key=key, count=0))
+                conn.execute(
+                    insert(limits).values(key=key, count=0, expires=(now // 3600 + 1) * 3600)
+                )
         except IntegrityError:
             pass
         with self.engine.begin() as conn:
@@ -277,3 +280,74 @@ class AuthStore:
         with self.engine.begin() as conn:
             conn.execute(delete(sessions).where(sessions.c.digest == digest(token)))
             self._record(conn, identity, "logout")
+
+    def organization_choices(self, identity: Identity) -> list[tuple[str, str]]:
+        with self.engine.connect() as conn:
+            rows = conn.execute(
+                select(organizations.c.id, organizations.c.name)
+                .join(memberships)
+                .where(memberships.c.user_id == identity.user_id)
+                .order_by(organizations.c.name, organizations.c.id)
+            ).all()
+        return [(row[0], row[1]) for row in rows]
+
+    def switch(self, token: str, org_id: UUID, now: int | None = None) -> tuple[str, int] | None:
+        """Atomically rotate the session, checking both current and target memberships."""
+        now = int(time.time()) if now is None else now
+        current_member = (
+            select(memberships.c.user_id)
+            .where(
+                memberships.c.user_id == sessions.c.user_id,
+                memberships.c.org_id == sessions.c.org_id,
+            )
+            .exists()
+        )
+        target_member = (
+            select(memberships.c.user_id)
+            .where(
+                memberships.c.user_id == sessions.c.user_id,
+                memberships.c.org_id == str(org_id),
+            )
+            .exists()
+        )
+        with self.engine.begin() as conn:
+            row = conn.execute(
+                delete(sessions)
+                .where(
+                    sessions.c.digest == digest(token),
+                    sessions.c.expires > now,
+                    current_member,
+                    target_member,
+                )
+                .returning(sessions.c.user_id, sessions.c.expires, sessions.c.org_id)
+            ).first()
+            if row is None:
+                return None
+            value = secrets.token_urlsafe(32)
+            conn.execute(
+                insert(sessions).values(
+                    digest=digest(value),
+                    user_id=row[0],
+                    org_id=str(org_id),
+                    csrf=secrets.token_urlsafe(32),
+                    expires=row[1],
+                )
+            )
+            identity = Identity(row[0], UUID(row[2]), "", "", "", "")
+            self._record(conn, identity, "organization_switch", str(org_id))
+            return value, row[1] - now
+
+    def cleanup(self, now: int | None = None) -> dict[str, int]:
+        """Remove at most 1,000 expired rows per table; never touch audit history."""
+        now = int(time.time()) if now is None else now
+        counts = {}
+        with self.engine.begin() as conn:
+            for table, key in (
+                (links, links.c.digest),
+                (sessions, sessions.c.digest),
+                (limits, limits.c.key),
+            ):
+                expired = select(key).where(table.c.expires <= now).limit(1000)
+                removed = conn.execute(delete(table).where(key.in_(expired)).returning(key)).all()
+                counts[table.name] = len(removed)
+        return counts

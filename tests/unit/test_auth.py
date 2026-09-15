@@ -2,6 +2,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -183,3 +184,93 @@ def test_login_does_not_disclose_membership_or_accept_get_consumption(database_u
         assert result.status_code == 303
         assert "HttpOnly" in result.headers["set-cookie"]
         assert "SameSite=strict" in result.headers["set-cookie"]
+
+
+def test_cleanup_keeps_active_credentials_and_audit(database_url):
+    auth = AuthStore(database_url)
+    auth.provision("a@example.com", "A")
+    expired = auth.consume(
+        auth.issue("a@example.com", "browser", "peer", now=100), "browser", now=100
+    )
+    auth.issue("a@example.com", "browser", "peer", now=100)
+    active_link = auth.issue("a@example.com", "browser", "peer", now=30000)
+    active = auth.consume(
+        auth.issue("a@example.com", "browser", "peer", now=30000), "browser", now=30000
+    )
+    with auth.engine.connect() as conn:
+        before = conn.execute(select(audit)).all()
+    removed = auth.cleanup(now=30000)
+    assert removed == {"auth_links": 1, "auth_sessions": 1, "auth_rate_limits": 2}
+    assert auth.cleanup(now=30000) == dict.fromkeys(removed, 0)
+    assert auth.identify(expired, now=30000) is None
+    assert auth.identify(active, now=30000)
+    with auth.engine.connect() as conn:
+        assert conn.execute(select(audit)).all() == before
+    assert auth.consume(active_link, "browser", now=30000)
+
+
+def test_switch_rotates_once_preserves_expiry_and_rejects_nonmembers(database_url):
+    auth = AuthStore(database_url)
+    auth.provision("a@example.com", "A")
+    auth.provision("a@example.com", "B")
+    token = auth.consume(
+        auth.issue("a@example.com", "browser", "peer", now=100), "browser", now=100
+    )
+    identity = auth.identify(token, now=100)
+    target = next(
+        UUID(id) for id, _ in auth.organization_choices(identity) if UUID(id) != identity.org_id
+    )
+    assert auth.switch(token, uuid4(), now=101) is None
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: auth.switch(token, target, now=101), range(2)))
+    successes = [result for result in results if result]
+    assert len(successes) == 1
+    new, remaining = successes[0]
+    assert remaining == 28799
+    assert auth.identify(token, now=101) is None
+    changed = auth.identify(new, now=101)
+    assert changed.org_id == target and changed.csrf != identity.csrf
+    assert auth.identify(new, now=28900) is None
+    with auth.engine.begin() as conn:
+        conn.execute(delete(memberships).where(memberships.c.org_id == str(target)))
+    assert auth.switch(new, identity.org_id, now=102) is None
+
+
+def test_browser_switch_requires_csrf_and_changes_report_scope(database_url):
+    mailbox = []
+    app = create_app(database_url, demo_mode=False, deliver=lambda e, u: mailbox.append((e, u)))
+    auth = app.state.auth
+    auth.provision("a@example.com", "A")
+    auth.provision("a@example.com", "B")
+    with TestClient(app, base_url="http://localhost") as client:
+        assert client.post("/organizations/switch").status_code == 401
+        page = login(client, mailbox, "a@example.com")
+        old_csrf = csrf(page)
+        identity = auth.identify(client.cookies.get("remy_session"))
+        target = next(
+            id for id, _ in auth.organization_choices(identity) if UUID(id) != identity.org_id
+        )
+        report = client.post(
+            "/reports/sample", data={"csrf": old_csrf}, follow_redirects=False
+        ).headers["location"]
+        assert target in client.get("/organizations").text
+        assert client.post("/organizations/switch", data={"org_id": target}).status_code == 403
+        assert (
+            client.post(
+                "/organizations/switch", data={"org_id": str(uuid4()), "csrf": old_csrf}
+            ).status_code
+            == 404
+        )
+        switched = client.post("/organizations/switch", data={"org_id": target, "csrf": old_csrf})
+        assert switched.status_code == 200
+        assert client.get(report).status_code == 404
+        assert client.get(report + "/download/json").status_code == 404
+        assert client.post("/reports/sample", data={"csrf": old_csrf}).status_code == 403
+        assert (
+            client.post(
+                "/organizations/switch",
+                data={"org_id": str(identity.org_id), "csrf": csrf(switched)},
+            ).status_code
+            == 200
+        )
+        assert client.get(report).status_code == 200
