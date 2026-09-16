@@ -1,6 +1,6 @@
 # Remy
 
-Remy turns saved Prowler AWS findings into a remediation report with stable item IDs, explanations, draft HIPAA references, and suggested Terraform. Customers review and implement the recommendations themselves.
+Remy turns saved Prowler AWS findings into a remediation report with stable item IDs, explanations, draft HIPAA references, and suggested Terraform. Users review and implement the recommendations themselves.
 
 ## Run locally
 
