@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added first-class, database-free `remy validate` and `remy report` commands for Prowler AWS JSON-OCSF files. Report generation writes self-contained HTML, PDF, JSON, and Terraform ZIP artifacts with format selection, safe overwrite behavior, stable IDs, documented exit codes, and `SOURCE_DATE_EPOCH` reproducibility.
+- Added an escaped standalone HTML report and deterministic PDF/ZIP metadata so identical CLI inputs, organization namespaces, and build timestamps produce byte-identical artifacts.
+
 - Added authenticated, certificate-verified SMTP delivery with STARTTLS/implicit TLS, socket timeouts, generic failure logging, and failed-link revocation. Tested an actual local TLS/SMTP message exchange; external provider activation still requires credentials and sender verification.
 - Allowed top-level email-link navigation with a SameSite=Lax login nonce while keeping session cookies Strict and confirmation POSTs CSRF-protected.
 - Added CSRF-protected organization switching with membership checks, atomic session rotation, unchanged expiry, and audit attribution. Added bounded expired-authentication cleanup and an indexed retention migration; active sessions and audit history are preserved.

@@ -2,12 +2,46 @@
 
 Remy turns saved Prowler AWS findings into a remediation report with stable item IDs, explanations, draft HIPAA references, and suggested Terraform. Customers review and implement the recommendations themselves.
 
-## Run locally
+## Command-line reports
 
-Requires Python 3.12 and uv.
+The CLI is the simplest way to use Remy. It does not require a database, account, authentication, or running server. Requires Python 3.12 and uv.
 
 ```sh
 uv sync --frozen
+uv run remy validate prowler-output.json
+uv run remy report prowler-output.json --output ./remy-report
+```
+
+`remy report` writes four standalone artifacts by default:
+
+- `report.html` — self-contained report for a browser.
+- `report.pdf` — portable review copy.
+- `report.json` — complete structured report snapshot.
+- `terraform.zip` — per-finding Terraform suggestions, manifest, hashes, and report JSON.
+
+Select one or more outputs by repeating `--format`, for example:
+
+```sh
+uv run remy report scan.json --format html --format json --output ./review
+```
+
+The output directory must not already exist unless `--force` is supplied. Forced generation replaces only Remy's named artifacts and preserves unrelated files. Remy generates all requested artifacts before writing them and never modifies the source scan.
+
+Successful validation and complete report generation return exit code 0. CLI usage errors return 2, invalid scan input returns 3, output/configuration failures return 4, and a successfully generated report containing unsupported guidance returns 10. That last result allows CI to retain artifacts while detecting a recommendation-coverage gap.
+
+Report and item IDs are stable for the same input and organization namespace. Supply `--organization-id UUID` when IDs should match a particular organization. Set [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/docs/source-date-epoch/) to a non-negative Unix timestamp for byte-identical HTML, JSON, PDF, and ZIP artifacts from identical inputs:
+
+```sh
+SOURCE_DATE_EPOCH=1770000000 uv run remy report scan.json --output ./remy-report
+```
+
+Remy currently consumes Prowler AWS JSON-OCSF files; it does not invoke Prowler or AWS. Inputs are limited to 10 MiB, 5,000 source records, and 5,000 expanded observations. Every malformed or duplicate observation rejects the whole input rather than producing a partial report.
+
+## Optional web workspace
+
+The web interface adds saved report history, organization membership, authentication, and audit records. Set it up separately:
+
+```sh
 make migrate
 uv run python -m scripts.provision_user you@example.com "Your organization"
 make dev
@@ -33,7 +67,8 @@ Reports persist in `.remy/reports.db`. Set `REMY_DATABASE_URL` consistently for 
 - Every FAIL is represented, including unsupported checks. PASS and MANUAL counts are shown separately.
 - Ninety-eight recommendation check mappings cover all 95 pinned HIPAA framework checks plus three additional checks. Guidance includes Terraform examples, change plans requiring customer context, and manual actions. Unknown checks remain visible.
 - Shared-setting warnings link related findings while preserving every item and Terraform suggestion. Older snapshots are not retroactively assessed.
-- Server-rendered report history and detail pages; PDF, JSON, and ZIP downloads containing suggestions and a hash manifest.
+- First-class, database-free `remy validate` and `remy report` commands with standalone HTML, PDF, JSON, and Terraform ZIP output, stable identities, overwrite protection, meaningful exit codes, and reproducible-build support.
+- Optional server-rendered report history and detail pages with the same PDF, JSON, and ZIP exports.
 - Operator-provisioned organizations and owner/member memberships, browser-bound single-use magic links, hashed session credentials, CSRF checks, and database-backed login-request limits.
 - Tenant-scoped history, reports, imports, and exports. Membership is checked on every authenticated request. Login, logout, provisioning, and downloads produce audit records protected against UPDATE/DELETE by database triggers.
 - Loopback-only HTTP boundary, same-origin form protection, bounded uploads, and escaped report content.
@@ -55,7 +90,7 @@ make coverage       # Prints framework handler coverage
 
 The Terraform harness runs formatting and provider-schema validation on known, missing, and malformed identifier cases, without AWS credentials, backends, plan, or apply.
 
-Tests cover normalization, malformed and duplicate records, stable identities, unsupported findings, tenant isolation, exports, escaping, HTTP upload/origin boundaries, token expiry/replay/concurrent consumption, session revocation, CSRF, audit immutability, secure cookies, and sign-in query redaction.
+Tests cover CLI stdout/stderr and exit codes, deterministic artifacts, overwrite protection, standalone HTML escaping, normalization, malformed and duplicate records, stable identities, unsupported findings, tenant isolation, exports, HTTP upload/origin boundaries, token expiry/replay/concurrent consumption, session revocation, CSRF, audit immutability, secure cookies, and sign-in query redaction.
 
 ## Next milestones
 
