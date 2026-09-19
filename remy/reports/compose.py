@@ -33,7 +33,15 @@ def priority(observation: Observation) -> tuple[int, list[str]]:
     return 15, ["Provisional priority: exposure classification requires review"]
 
 
-def compose_report(raw: bytes, org_id: UUID, source_name: str, *, sample: bool = False) -> Report:
+def compose_report(
+    raw: bytes,
+    org_id: UUID,
+    source_name: str,
+    *,
+    sample: bool = False,
+    report_id: UUID | None = None,
+    created_at: datetime | None = None,
+) -> Report:
     observations = parse_ocsf(raw)
     items = []
     for observation in observations:
@@ -87,9 +95,9 @@ def compose_report(raw: bytes, org_id: UUID, source_name: str, *, sample: bool =
             0, "Public Prowler example with placeholder IDs; not a live scan or full HIPAA scan."
         )
     report = Report(
-        report_id=uuid4(),
+        report_id=report_id or uuid4(),
         org_id=org_id,
-        created_at=datetime.now(UTC),
+        created_at=created_at or datetime.now(UTC),
         source_name=source_name,
         source_sha256=hashlib.sha256(raw).hexdigest(),
         source_kind=(

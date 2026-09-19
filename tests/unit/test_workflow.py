@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from remy.api.app import DEMO_ORG, create_app
 from remy.ingest.ocsf import MAX_BYTES, ImportError, parse_ocsf
 from remy.reports.compose import compose_report, stable_item_id
-from remy.reports.export import json_export, pdf_export, terraform_export
+from remy.reports.export import html_export, json_export, pdf_export, terraform_export
 
 SAMPLE = Path("remy/data/prowler-aws-example.json").read_bytes()
 
@@ -99,6 +99,9 @@ def test_exports_have_item_identity_and_safe_paths():
     report = compose_report(SAMPLE, DEMO_ORG, "sample", sample=True)
     assert json.loads(json_export(report))["report_id"] == str(report.report_id)
     assert pdf_export(report).startswith(b"%PDF-")
+    html = html_export(report)
+    assert html.startswith(b"<!doctype html>")
+    assert str(report.report_id).encode() in html
     report.items[0].recommendation.filename = "../../unsafe.tf"
     with ZipFile(io.BytesIO(terraform_export(report))) as archive:
         assert all(".." not in name and not name.startswith("/") for name in archive.namelist())

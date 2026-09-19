@@ -4,10 +4,13 @@ import hashlib
 import io
 import json
 import textwrap
+from functools import partial
+from pathlib import Path
 from typing import cast
 from xml.sax.saxutils import escape
-from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from reportlab.lib import colors
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
@@ -25,6 +28,18 @@ from reportlab.platypus import (
 
 from remy.reports.schema import Report
 
+TEMPLATE_DIR = Path(__file__).with_name("templates")
+
+
+def html_export(report: Report) -> bytes:
+    """Render a self-contained, escaped report that needs no running Remy server."""
+    environment = Environment(
+        loader=FileSystemLoader(TEMPLATE_DIR),
+        autoescape=select_autoescape(("html", "xml")),
+        auto_reload=False,
+    )
+    return environment.get_template("standalone.html").render(report=report).encode("utf-8")
+
 
 def json_export(report: Report) -> bytes:
     return report.model_dump_json(indent=2, exclude_unset=True).encode("utf-8")
@@ -34,8 +49,9 @@ def terraform_export(report: Report) -> bytes:
     stream = io.BytesIO()
     manifest: list[dict[str, object]] = []
     with ZipFile(stream, "w", compression=ZIP_DEFLATED) as archive:
-        archive.writestr("report.json", json_export(report))
-        archive.writestr(
+        _zip_write(archive, "report.json", json_export(report))
+        _zip_write(
+            archive,
             "README.md",
             """# Remy suggested Terraform
 
@@ -77,9 +93,10 @@ Remy did not apply or authorize any change. No GitHub account is required.
                 # Never trust an uploaded name or recommendation filename as a path.
                 path = f"items/{item.item_id}/suggestion.tf"
                 entry.update(path=path, sha256=hashlib.sha256(code.encode()).hexdigest())
-                archive.writestr(path, code)
+                _zip_write(archive, path, code)
             manifest.append(entry)
-        archive.writestr(
+        _zip_write(
+            archive,
             "manifest.json",
             json.dumps(
                 {
@@ -96,6 +113,14 @@ Remy did not apply or authorize any change. No GitHub account is required.
             ),
         )
     return stream.getvalue()
+
+
+def _zip_write(archive: ZipFile, name: str, content: str | bytes) -> None:
+    """Write stable ZIP metadata so identical report snapshots produce identical archives."""
+    info = ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+    info.compress_type = ZIP_DEFLATED
+    info.external_attr = 0o100644 << 16
+    archive.writestr(info, content)
 
 
 def pdf_export(report: Report) -> bytes:
@@ -227,5 +252,10 @@ def pdf_export(report: Report) -> bytes:
         canvas.drawRightString(7.85 * inch, 0.35 * inch, f"Page {canvas.getPageNumber()}")
         canvas.restoreState()
 
-    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    doc.build(
+        story,
+        onFirstPage=footer,
+        onLaterPages=footer,
+        canvasmaker=partial(Canvas, invariant=1),
+    )
     return stream.getvalue()
