@@ -5,6 +5,7 @@ All observations below are invented for this public example. No AWS data is read
 
 import hashlib
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
@@ -74,6 +75,7 @@ records = [
     ),
 ]
 raw = json.dumps(records, indent=2).encode()
+os.environ["SOURCE_DATE_EPOCH"] = str(int(datetime(2026, 9, 23, 10, tzinfo=UTC).timestamp()))
 report = compose_report(
     raw,
     UUID("ee0b36c0-a39a-4db1-9d85-000000000001"),
