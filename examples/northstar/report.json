@@ -1,0 +1,253 @@
+{
+  "schema_version": "1.1",
+  "report_id": "ee0b36c0-a39a-4db1-9d85-000000000002",
+  "org_id": "ee0b36c0-a39a-4db1-9d85-000000000001",
+  "created_at": "2026-09-23T10:00:00Z",
+  "source_name": "Northstar Demo - fictional AWS security review",
+  "source_sha256": "e63f71fe12450da44ba21aa4d28cff19cc003494773a7176bc310e05f021e87c",
+  "source_kind": "Synthetic demonstration data in Prowler AWS JSON-OCSF format. Not a real scan.",
+  "items": [
+    {
+      "item_id": "8a55a1d0-40fa-5e17-9bde-afee5be5196f",
+      "line_number": 1,
+      "observation": {
+        "account_id": "123456789012",
+        "check_id": "iam_root_mfa_enabled",
+        "resource_uid": "arn:aws:iam::123456789012:root",
+        "resource_name": "arn:aws:iam::123456789012:root",
+        "service": "iam",
+        "region": "us-west-2",
+        "status": "FAIL",
+        "severity": "High",
+        "title": "Root account has no MFA device",
+        "detail": "Fictional example: No MFA device is registered for the fictional account root user. An authorized account owner must review and complete enrollment.",
+        "observed_at": "2026-09-23T09:00:00Z"
+      },
+      "priority_score": 65,
+      "priority_reasons": [
+        "Account credential protection",
+        "Affects whole account"
+      ],
+      "recommendation": {
+        "status": "manual_action",
+        "what": "The AWS root identity has active credentials but Prowler did not observe multi-factor authentication enabled for that identity.",
+        "why": "Root credentials have unrestricted account authority. A second authentication factor reduces the chance that a stolen password alone leads to account takeover.",
+        "change": "An authorized account owner should enroll an MFA device for a standalone root user, or review centralized root access for an Organizations member account and remove unneeded member-account root credentials.",
+        "impact": "The account owner must preserve secure recovery access and update the documented break-glass procedure. Losing both the MFA device and recovery path can delay emergency access.",
+        "citations": [
+          {
+            "source_url": "https://github.com/prowler-cloud/prowler/blob/73ae2eb1947a0912a05010a296f469bfa55ebe76/prowler/compliance/aws/hipaa_aws.json",
+            "section": "45 CFR 164.308(a)(3)(ii)(A)",
+            "title": "Authorization and/or supervision",
+            "url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.308",
+            "confidence": "low",
+            "note": "Prowler 5.42.0 framework mapping; applicability requires review. This technical result does not establish HIPAA noncompliance. "
+          },
+          {
+            "source_url": "https://github.com/prowler-cloud/prowler/blob/73ae2eb1947a0912a05010a296f469bfa55ebe76/prowler/compliance/aws/hipaa_aws.json",
+            "section": "45 CFR 164.312(d)",
+            "title": "Person or entity authentication",
+            "url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.312",
+            "confidence": "low",
+            "note": "Prowler 5.42.0 framework mapping; applicability requires review. This technical result does not establish HIPAA noncompliance. "
+          }
+        ],
+        "terraform": null,
+        "filename": null,
+        "assumptions": [
+          "The finding does not establish whether the account is standalone or uses centralized root access in AWS Organizations.",
+          "MFA enrollment requires control of the root sign-in and a physical or virtual authenticator; no Terraform snippet can safely perform that ceremony."
+        ],
+        "steps": [
+          "Confirm whether this is a standalone account, an Organizations management account, or a member account with centralized root access.",
+          "For a root identity that remains sign-in capable, sign in through the AWS root-user flow and assign a securely controlled MFA device.",
+          "For an eligible member account, review centralized root access and removal of unnecessary root credentials instead of recreating persistent root access.",
+          "Document device custody and recovery, remove root access keys, avoid routine root use, and rerun the Prowler check.",
+          "AWS root-user and MFA reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html#id_root-user_manage_mfa"
+        ],
+        "template_version": "prototype-2",
+        "validation": "Not validated against your environment. Review and adapt before applying."
+      },
+      "change_target": null,
+      "coordination_notes": [],
+      "related_item_ids": []
+    },
+    {
+      "item_id": "a00eea4b-ca66-5503-9128-3349a62288b1",
+      "line_number": 2,
+      "observation": {
+        "account_id": "123456789012",
+        "check_id": "s3_bucket_level_public_access_block",
+        "resource_uid": "arn:aws:s3:::northstar-demo-invoices",
+        "resource_name": "arn:aws:s3:::northstar-demo-invoices",
+        "service": "s3",
+        "region": "us-west-2",
+        "status": "FAIL",
+        "severity": "High",
+        "title": "Invoice archive is missing bucket-level public access blocks",
+        "detail": "Fictional example: The northstar-demo-invoices bucket stores generated invoice exports. BlockPublicAcls and IgnorePublicAcls are disabled. This finding alone does not establish that any objects are publicly accessible.",
+        "observed_at": "2026-09-23T09:00:00Z"
+      },
+      "priority_score": 60,
+      "priority_reasons": [
+        "Potential direct data exposure",
+        "Reachability not independently verified"
+      ],
+      "recommendation": {
+        "status": "needs_context",
+        "what": "The bucket-level S3 Block Public Access check failed, so one or more of the four bucket controls is absent or disabled.",
+        "why": "Those controls prevent new public ACLs or policies and suppress access granted by existing public ACLs or policies. They reduce accidental disclosure risk, but the scan result does not show whether public delivery is intentional.",
+        "change": "After confirming the bucket is intended to be private, manage all four bucket-level Block Public Access flags as true. The snippet manages only the public-access-block configuration; it does not create or replace the bucket.",
+        "impact": "Public S3 website access can stop. CloudFront delivery can also stop if it still depends on public access rather than Origin Access Control or Origin Access Identity. RestrictPublicBuckets may also block cross-account access from a policy AWS considers public.",
+        "citations": [
+          {
+            "source_url": null,
+            "section": "45 CFR 164.312(a)(1)",
+            "title": "Access control",
+            "url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.312",
+            "confidence": "low",
+            "note": "Draft safeguard mapping for reviewer assessment; this finding alone does not establish HIPAA noncompliance."
+          }
+        ],
+        "terraform": "# Suggested Terraform — review and adapt before applying.\nvariable \"bucket_name\" {\n  description = \"Existing general-purpose S3 bucket to protect\"\n  type        = string\n  default     = \"northstar-demo-invoices\"\n}\n\nresource \"aws_s3_bucket_public_access_block\" \"recommended\" {\n  bucket = var.bucket_name\n\n  block_public_acls       = true\n  block_public_policy     = true\n  ignore_public_acls      = true\n  restrict_public_buckets = true\n}\n",
+        "filename": "s3_bucket_public_access_block.tf",
+        "assumptions": [
+          "The bucket input default came from the validated observation value 'northstar-demo-invoices'.",
+          "Bucket ownership, Terraform state ownership, website hosting, CloudFront origin design, ACLs, and bucket policy were not inferred from this observation.",
+          "Account- and organization-level Block Public Access may impose stricter effective settings."
+        ],
+        "steps": [
+          "Confirm the bucket owner and whether the bucket intentionally serves a public website or another public workload.",
+          "Review bucket and access-point policies, ACLs, CloudFront origin access, and effective account/organization Block Public Access before selecting flags.",
+          "If this public-access-block resource is already managed by Terraform, update that resource rather than adding a duplicate.",
+          "If it exists in AWS but is outside Terraform, import it only after confirming the target workspace owns it; otherwise add this resource for the existing bucket.",
+          "Run terraform plan in the customer workspace, review access loss and cross-account effects, apply through the customer's process, then rerun the Prowler check.",
+          "AWS behavior reference: https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html",
+          "Terraform resource reference: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block"
+        ],
+        "template_version": "prototype-2",
+        "validation": "Not validated against your environment. Review and adapt before applying."
+      },
+      "change_target": {
+        "account_id": "123456789012",
+        "region": null,
+        "setting": "S3 bucket public access block",
+        "resource": "northstar-demo-invoices"
+      },
+      "coordination_notes": [],
+      "related_item_ids": []
+    },
+    {
+      "item_id": "07e555ac-09a5-532c-9adb-b66fc1ad3954",
+      "line_number": 3,
+      "observation": {
+        "account_id": "123456789012",
+        "check_id": "cloudtrail_multi_region_enabled",
+        "resource_uid": "arn:aws:cloudtrail:us-west-2:123456789012:trail/northstar-demo-audit",
+        "resource_name": "northstar-demo-audit",
+        "service": "cloudtrail",
+        "region": "us-west-2",
+        "status": "FAIL",
+        "severity": "Medium",
+        "title": "Audit trail only covers one AWS region",
+        "detail": "Fictional example: The northstar-demo-audit trail is configured for us-west-2 only. The fictional team also deploys services in us-east-1.",
+        "observed_at": "2026-09-23T09:00:00Z"
+      },
+      "priority_score": 46,
+      "priority_reasons": [
+        "Account visibility",
+        "Affects whole account"
+      ],
+      "recommendation": {
+        "status": "needs_context",
+        "what": "Prowler did not observe an actively logging CloudTrail trail covering every enabled AWS Region. Event history alone is not a durable multi-Region trail.",
+        "why": "A coverage or logging gap reduces the audit record available for detection and investigation of account activity.",
+        "change": "Create or update a trail so logging is enabled and all enabled Regions plus global service events are covered. The snippet is intentionally minimal and requires an existing log-delivery bucket input.",
+        "impact": "CloudTrail and S3 storage charges may increase. A wrong bucket policy, KMS policy, home Region, or organization/account choice can prevent delivery or create a second, overlapping trail.",
+        "citations": [
+          {
+            "source_url": "https://github.com/prowler-cloud/prowler/blob/73ae2eb1947a0912a05010a296f469bfa55ebe76/prowler/compliance/aws/hipaa_aws.json",
+            "section": "45 CFR 164.308(a)(1)(ii)(D)",
+            "title": "Information system activity review",
+            "url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.308",
+            "confidence": "low",
+            "note": "Prowler 5.42.0 framework mapping; applicability requires review. This technical result does not establish HIPAA noncompliance. "
+          },
+          {
+            "source_url": "https://github.com/prowler-cloud/prowler/blob/73ae2eb1947a0912a05010a296f469bfa55ebe76/prowler/compliance/aws/hipaa_aws.json",
+            "section": "45 CFR 164.308(a)(3)(ii)(A)",
+            "title": "Authorization and/or supervision",
+            "url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.308",
+            "confidence": "low",
+            "note": "Prowler 5.42.0 framework mapping; applicability requires review. This technical result does not establish HIPAA noncompliance. "
+          },
+          {
+            "source_url": "https://github.com/prowler-cloud/prowler/blob/73ae2eb1947a0912a05010a296f469bfa55ebe76/prowler/compliance/aws/hipaa_aws.json",
+            "section": "45 CFR 164.308(a)(6)(ii)",
+            "title": "Response and reporting",
+            "url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.308",
+            "confidence": "low",
+            "note": "Prowler 5.42.0 framework mapping; applicability requires review. This technical result does not establish HIPAA noncompliance. "
+          },
+          {
+            "source_url": "https://github.com/prowler-cloud/prowler/blob/73ae2eb1947a0912a05010a296f469bfa55ebe76/prowler/compliance/aws/hipaa_aws.json",
+            "section": "45 CFR 164.312(b)",
+            "title": "Audit controls",
+            "url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.312",
+            "confidence": "low",
+            "note": "Prowler 5.42.0 framework mapping; applicability requires review. This technical result does not establish HIPAA noncompliance. "
+          },
+          {
+            "source_url": "https://github.com/prowler-cloud/prowler/blob/73ae2eb1947a0912a05010a296f469bfa55ebe76/prowler/compliance/aws/hipaa_aws.json",
+            "section": "45 CFR 164.312(e)(2)(i)",
+            "title": "Integrity controls",
+            "url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.312",
+            "confidence": "low",
+            "note": "Prowler 5.42.0 framework mapping; applicability requires review. This technical result does not establish HIPAA noncompliance. "
+          }
+        ],
+        "terraform": "# Suggested Terraform — review and adapt before applying.\nvariable \"trail_name\" {\n  description = \"Name of the CloudTrail trail to create or manage\"\n  type        = string\n  default     = \"northstar-demo-audit\"\n}\n\nvariable \"cloudtrail_s3_bucket_name\" {\n  description = \"Existing S3 bucket configured to accept CloudTrail log delivery\"\n  type        = string\n}\n\nresource \"aws_cloudtrail\" \"recommended\" {\n  name                          = var.trail_name\n  s3_bucket_name                = var.cloudtrail_s3_bucket_name\n  enable_logging                = true\n  is_multi_region_trail         = true\n  include_global_service_events = true\n}\n",
+        "filename": "cloudtrail_multi_region.tf",
+        "assumptions": [
+          "The trail name default came from the validated observation value 'northstar-demo-audit'.",
+          "The CloudTrail S3 bucket name is unknown and therefore has no generated default.",
+          "Bucket policy, KMS encryption, log retention, event selectors, organization ownership, account scope, home Region, and Terraform state require review.",
+          "The snippet covers management events; service data events require a separate event-selector decision and may add cost."
+        ],
+        "steps": [
+          "Decide whether to update an existing trail, create an account trail, or use an organization trail from its management or delegated administrator account.",
+          "Choose the trail home Region and a protected S3 destination, then configure the required CloudTrail bucket policy and any KMS key policy before creating the trail.",
+          "If the trail is already managed by Terraform, update it there. If it exists outside Terraform, import it only after confirming the workspace should own the complete trail configuration.",
+          "Review management and data event scope, retention, encryption, duplicate-event cost, and delivery health; then plan, apply through the customer's process, and rerun the Prowler check.",
+          "AWS trail reference: https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-create-and-update-a-trail-by-using-the-aws-cli-create-trail.html",
+          "Terraform resource reference: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudtrail"
+        ],
+        "template_version": "prototype-2",
+        "validation": "Not validated against your environment. Review and adapt before applying."
+      },
+      "change_target": {
+        "account_id": "123456789012",
+        "region": "us-west-2",
+        "setting": "CloudTrail trail configuration",
+        "resource": "northstar-demo-audit"
+      },
+      "coordination_notes": [],
+      "related_item_ids": []
+    }
+  ],
+  "observation_count": 4,
+  "pass_count": 1,
+  "manual_count": 0,
+  "warnings": [
+    "FICTIONAL EXAMPLE: Northstar Demo, all account IDs, resource names, and findings are invented. No customer or live AWS data is included.",
+    "Local prototype: recommendation coverage and HIPAA mappings are incomplete and draft.",
+    "An uploaded JSON file does not prove a complete HIPAA scan. No finding is marked resolved.",
+    "Priority is provisional; full mapping, reachability and recency scoring are not yet implemented.",
+    "Terraform is suggested guidance, not an executable deployment bundle. Review every input.",
+    "Shared-setting review: 0 possible overlap group(s) identified. Only known template targets are compared. Missing inputs, shared dependencies, and existing Terraform ownership still require review.",
+    "The upload contains 2 of 95 distinct check IDs in the pinned HIPAA framework. This is a membership count, not proof of scan completeness or compliance. Framework source: https://github.com/prowler-cloud/prowler/blob/73ae2eb1947a0912a05010a296f469bfa55ebe76/prowler/compliance/aws/hipaa_aws.json"
+  ],
+  "shared_changes": [],
+  "coordination_assessed": true,
+  "content_sha256": "3362163815ccb2ee2a5979e1247ab455f622a9d1fe7dc22518fb59927c5e9370"
+}

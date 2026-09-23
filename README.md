@@ -2,6 +2,30 @@
 
 Remy turns saved Prowler AWS findings into a remediation report with stable item IDs, explanations, draft HIPAA references, and suggested Terraform. Customers review and implement the recommendations themselves.
 
+## Example reports
+
+Explore the same fictional Northstar Demo security review in three formats:
+
+- [HTML report](examples/northstar/report.html) ([open in browser](https://jaybrownlee.com/remy/examples/report.html))
+- [PDF report](examples/northstar/report.pdf)
+- [JSON report](examples/northstar/report.json)
+
+All account IDs, resource names, and findings are invented. These examples contain
+three failed findings (S3 public access blocks, a single-region CloudTrail trail,
+and root-account MFA) and one passed observation. They are not a real scan or a
+compliance assessment. HTML, PDF, and JSON share the same report and finding IDs.
+
+The [synthetic source scan](examples/northstar/scan.json) is included. To regenerate
+the examples with the current report engine, run from this repository:
+
+```sh
+uv run python -m scripts.generate_public_examples
+```
+
+The generator uses fixed report IDs and timestamps and reads no AWS or customer
+data. The files at [jaybrownlee.com/remy](https://jaybrownlee.com/remy) are copies
+of these exports.
+
 ## Command-line reports
 
 The CLI is the simplest way to use Remy. It does not require a database, account, authentication, or running server. Requires Python 3.12 and uv.

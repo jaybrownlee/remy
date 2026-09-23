@@ -1,0 +1,118 @@
+[
+  {
+    "metadata": {
+      "event_code": "s3_bucket_level_public_access_block"
+    },
+    "cloud": {
+      "provider": "aws",
+      "account": {
+        "uid": "123456789012"
+      },
+      "region": "us-west-2"
+    },
+    "finding_info": {
+      "title": "Invoice archive is missing bucket-level public access blocks"
+    },
+    "status_code": "FAIL",
+    "status_detail": "Fictional example: The northstar-demo-invoices bucket stores generated invoice exports. BlockPublicAcls and IgnorePublicAcls are disabled. This finding alone does not establish that any objects are publicly accessible.",
+    "severity": "High",
+    "time_dt": "2026-09-23T09:00:00+00:00",
+    "resources": [
+      {
+        "uid": "arn:aws:s3:::northstar-demo-invoices",
+        "name": "arn:aws:s3:::northstar-demo-invoices",
+        "region": "us-west-2",
+        "group": {
+          "name": "s3"
+        }
+      }
+    ]
+  },
+  {
+    "metadata": {
+      "event_code": "cloudtrail_multi_region_enabled"
+    },
+    "cloud": {
+      "provider": "aws",
+      "account": {
+        "uid": "123456789012"
+      },
+      "region": "us-west-2"
+    },
+    "finding_info": {
+      "title": "Audit trail only covers one AWS region"
+    },
+    "status_code": "FAIL",
+    "status_detail": "Fictional example: The northstar-demo-audit trail is configured for us-west-2 only. The fictional team also deploys services in us-east-1.",
+    "severity": "Medium",
+    "time_dt": "2026-09-23T09:00:00+00:00",
+    "resources": [
+      {
+        "uid": "arn:aws:cloudtrail:us-west-2:123456789012:trail/northstar-demo-audit",
+        "name": "northstar-demo-audit",
+        "region": "us-west-2",
+        "group": {
+          "name": "cloudtrail"
+        }
+      }
+    ]
+  },
+  {
+    "metadata": {
+      "event_code": "iam_root_mfa_enabled"
+    },
+    "cloud": {
+      "provider": "aws",
+      "account": {
+        "uid": "123456789012"
+      },
+      "region": "us-west-2"
+    },
+    "finding_info": {
+      "title": "Root account has no MFA device"
+    },
+    "status_code": "FAIL",
+    "status_detail": "Fictional example: No MFA device is registered for the fictional account root user. An authorized account owner must review and complete enrollment.",
+    "severity": "High",
+    "time_dt": "2026-09-23T09:00:00+00:00",
+    "resources": [
+      {
+        "uid": "arn:aws:iam::123456789012:root",
+        "name": "arn:aws:iam::123456789012:root",
+        "region": "us-west-2",
+        "group": {
+          "name": "iam"
+        }
+      }
+    ]
+  },
+  {
+    "metadata": {
+      "event_code": "s3_bucket_level_public_access_block"
+    },
+    "cloud": {
+      "provider": "aws",
+      "account": {
+        "uid": "123456789012"
+      },
+      "region": "us-west-2"
+    },
+    "finding_info": {
+      "title": "Audit log bucket has all public access blocks enabled"
+    },
+    "status_code": "PASS",
+    "status_detail": "Fictional example: All four bucket-level public access block settings are enabled.",
+    "severity": "Informational",
+    "time_dt": "2026-09-23T09:00:00+00:00",
+    "resources": [
+      {
+        "uid": "arn:aws:s3:::northstar-demo-audit-logs",
+        "name": "arn:aws:s3:::northstar-demo-audit-logs",
+        "region": "us-west-2",
+        "group": {
+          "name": "s3"
+        }
+      }
+    ]
+  }
+]
